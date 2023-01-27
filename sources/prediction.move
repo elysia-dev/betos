@@ -1,0 +1,258 @@
+module betos::prediction {
+    use std::signer;
+    use std::vector;
+    use aptos_framework::account::SignerCapability;
+    use aptos_framework::resource_account;
+    use aptos_framework::account;
+    use aptos_framework::timestamp;
+    use aptos_std::table::{Self, Table};
+    use aptos_framework::coin::{Self};
+    use aptos_framework::aptos_coin::{AptosCoin};
+
+    // #[test_only]
+    // use std::debug;
+
+    const ENO_OWNER: u64 = 0;
+
+    struct RoundContainer has key {
+        signer_cap: SignerCapability,
+        rounds: vector<Round>
+    }
+
+    struct Round has key, store {
+        start_timestamp: u64, // block.
+        lock_timestamp: u64,
+        close_timestamp: u64,
+        bull_amount: u64,
+        bear_amount: u64,
+        total_amount: u64,
+        lock_price: u64, // start
+        close_price: u64,
+    }
+
+    struct Bet has store {
+        epoch: u64,
+        is_bull: bool,
+        amount: u64,
+        claimed: bool,
+    }
+
+    struct BetContainer has key {
+        bets: Table<u64, Bet>
+    }
+
+    fun init_module(account: &signer) {
+        // Destroys temporary storage for resource account signer capability and returns signer capability.
+        let resource_signer_cap = resource_account::retrieve_resource_account_cap(account, @deployer);
+        let round_container = RoundContainer {
+            signer_cap: resource_signer_cap,
+            rounds: vector::empty<Round>()
+        };
+
+        coin::register<AptosCoin>(account);
+        move_to<RoundContainer>(account, round_container);
+    }
+
+    // TODO: check the signer is @deployer
+    public entry fun add_round(account: &signer) acquires RoundContainer {
+        let account_address = signer::address_of(account);
+        assert!(account_address == @deployer, ENO_OWNER);
+        let round_container = borrow_global_mut<RoundContainer>(@betos);
+        // let resource_signer = account::create_signer_with_capability(&round_container.signer_cap);
+
+        let interval_seconds = 10;
+        let start_timestamp = timestamp::now_seconds();
+        let lock_timestamp = start_timestamp + interval_seconds;
+        let close_timestamp = start_timestamp + 2 * interval_seconds;
+
+        let new_round = Round {
+            start_timestamp,
+            lock_timestamp,
+            close_timestamp,
+            bull_amount: 0,
+            bear_amount: 0,
+            total_amount: 0,
+            close_price: 0,
+            lock_price: 0,
+        };
+
+        vector::push_back(&mut round_container.rounds, new_round);
+    }
+
+    // epoch: the index of round_container.rounds vector
+    public entry fun bet(better: &signer, epoch: u64, amount: u64, is_bull: bool) acquires RoundContainer, BetContainer {
+        let better_address = signer::address_of(better);
+
+        // 1. Create if not exists
+        if (!exists<BetContainer>(better_address)) {
+            move_to<BetContainer>(better, BetContainer { bets: table::new<u64, Bet>() });
+        };
+
+        // 2. Transfer aptos
+        let round_container = borrow_global_mut<RoundContainer>(@betos);
+        let resource_signer = account::create_signer_with_capability(&round_container.signer_cap);
+        let resource_signer_address = signer::address_of(&resource_signer);
+        let in_coin = coin::withdraw<AptosCoin>(better, amount);
+        coin::deposit(resource_signer_address, in_coin);
+
+        // 3. Insert into table
+        let bet_container = borrow_global_mut<BetContainer>(better_address);
+        table::add(&mut bet_container.bets, epoch, Bet { epoch, amount, is_bull, claimed: false } );
+
+        // 4. Add round.bull_amount
+        let round = vector::borrow_mut<Round>(&mut round_container.rounds, epoch);
+        if (is_bull) {
+            round.bull_amount = round.bull_amount + amount;
+        } else {
+            round.bear_amount = round.bear_amount + amount;
+        };
+        round.total_amount = round.total_amount + amount;
+    }
+
+    public entry fun bet_bull(better: &signer, epoch: u64, amount: u64) acquires RoundContainer, BetContainer {
+        bet(better, epoch, amount, true);
+    }
+
+    public entry fun bet_bear(better: &signer, epoch: u64, amount: u64) acquires RoundContainer, BetContainer {
+        bet(better, epoch, amount, false);
+    }
+
+    fun claim(resource_signer: &signer, account_address: address, round: &Round, bet: &mut Bet) {
+        // TODO: handle the draw
+        if (round.lock_price <= round.close_price && bet.is_bull) {
+            let prize = (bet.amount * round.total_amount) / round.bull_amount;
+            coin::transfer<AptosCoin>(resource_signer, account_address, prize);
+            bet.claimed = true;
+        } else if(round.close_price < round.lock_price && !bet.is_bull) {
+            let prize = (bet.amount * round.total_amount) / round.bear_amount;
+            coin::transfer<AptosCoin>(resource_signer, account_address, prize);
+            bet.claimed = true;
+        };
+    }
+
+    public entry fun claim_entry(account: &signer) acquires RoundContainer, BetContainer {
+        let account_address = signer::address_of(account);
+        let bet_container = borrow_global_mut<BetContainer>(account_address);
+        let round_container = borrow_global<RoundContainer>(@betos);
+        let resource_signer = account::create_signer_with_capability(&round_container.signer_cap);
+        let num_rounds = vector::length(&round_container.rounds);
+
+        let i = 0;
+
+        loop {
+            if (i == num_rounds) {
+                break
+            };
+
+            let round = vector::borrow(&round_container.rounds, i);
+            let bet = table::borrow_mut(&mut bet_container.bets, i);
+
+            if (bet.claimed) {
+                continue
+            };
+
+            claim(&resource_signer, account_address, round, bet);
+
+            i = i + 1;
+        };
+    }
+
+    fun test_bet_bull_after_close() {
+    }
+
+    #[test(creator = @0xa11ce, framework = @0x1)]
+    fun test_claim_already_claimed() {
+        // assert no transfer happens
+
+        // assert bet.claiemd remains true
+    }
+
+    #[test(creator = @0xa11ce, framework = @0x1)]
+    fun test_claim_bull() {
+        // Assumption: total: 100, bull: 50, bear 50, bet.amount: 20, bet.claiemd = false
+        // Expected: prize: 40, bet.claimed: true
+
+        // assert get the right amount of the prize
+
+        // assert bet.claimed false -> true
+    }
+
+    fun test_claim_bear() {
+
+    }
+
+    fun test_claim_draw() {
+
+    }
+
+    public entry fun set_lock_price(account: &signer, epoch: u64, price: u64) acquires RoundContainer {
+        // check onlyOwner
+        let account_address = signer::address_of(account);
+        assert!(account_address == @deployer, ENO_OWNER);
+
+        let round_container = borrow_global_mut<RoundContainer>(@betos);
+        let round = vector::borrow_mut<Round>(&mut round_container.rounds, epoch);
+        round.lock_price = price
+    }
+
+    public entry fun set_close_price(account: &signer, epoch: u64, price: u64) acquires RoundContainer {
+        // check onlyOwner
+        let account_address = signer::address_of(account);
+        assert!(account_address == @deployer, ENO_OWNER);
+
+        let round_container = borrow_global_mut<RoundContainer>(@betos);
+        let round = vector::borrow_mut<Round>(&mut round_container.rounds, epoch);
+        round.close_price = price
+    }
+
+    #[test_only]
+    public entry fun set_up_test(origin_account: &signer, resource_account: &signer, framework: signer) {
+        use std::vector;
+        timestamp::set_time_has_started_for_testing(&framework);
+        account::create_account_for_test(signer::address_of(origin_account));
+        // account::create_account_for_test(signer::address_of(resource_account));
+
+        // create a resource account from the origin account, mocking the module publishing process
+        resource_account::create_resource_account(origin_account, vector::empty<u8>(), vector::empty<u8>());
+        init_module(resource_account);
+    }
+
+    #[test(creator = @0xa11ce, resource_account = @0x6c9df88bbf3864ff164ef4af37945100ba7f3c6e9a37e3ebc81320bbd4e79253, framework = @0x1)]
+    fun test_add_round(
+        creator: signer,
+        resource_account: signer,
+        framework: signer
+    ) acquires RoundContainer, Round {
+        set_up_test(&creator, &resource_account, framework);
+
+        let now = timestamp::now_seconds();
+        let interval_seconds = 10;
+        let creator_addr = signer::address_of(&creator);
+
+        add_round(&creator);
+        let round = borrow_global<Round>(creator_addr);
+
+        assert!(round.start_timestamp == now, 0);
+        assert!(round.lock_timestamp == now + interval_seconds, 0);
+        assert!(round.close_timestamp == now + 2 * interval_seconds, 0);
+    }
+
+/*
+    #[test(creator = @0xa11ce, resource_account = @0x6c9df88bbf3864ff164ef4af37945100ba7f3c6e9a37e3ebc81320bbd4e79253, stranger = @0xb0b, framework = @0x1)]
+    fun test_add_round_only_owner(
+        creator: signer,
+        resource_account: signer,
+        stranger: signer,
+        framework: signer,
+    ) acquires RoundContainer {
+        set_up_test(&creator, &resource_account, framework);
+
+        let stranger_addr = signer::address_of(&stranger);
+        debug::print(&stranger_addr);
+        debug::print(&@deployer);
+
+        add_round(&creator);
+        // let round = borrow_global<Round>(stranger_addr);
+    }
+    */
+}
