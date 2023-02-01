@@ -15,5 +15,6 @@ module.exports = {
   rules: {
     "react/react-in-jsx-scope": 0,
     "@typescript-eslint/no-empty-function": 0,
+    "react/prop-types": 0,
   },
 }

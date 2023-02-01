@@ -1,10 +1,11 @@
-import React from "react"
+import React, { useEffect, useState } from "react"
 import styled from "styled-components"
 import { Button, theme, Typography } from "antd"
 import PartyImage from "../assets/party.png"
-import { tokenToString } from "typescript"
-import { gray } from "@ant-design/colors"
-import useAptosModule from "../useAptosModule"
+import { Types, AptosClient, getAddressFromAccountOrAddress } from "aptos"
+import useAptosModule, { MODULE_NAME, BETOS_ADDRESS } from "../useAptosModule"
+import Card from "./Card"
+import dummyRounds, { genDummy } from "./dummyRounds"
 
 const Wrapper = styled.div``
 
@@ -36,140 +37,135 @@ const ClaimButton = styled(Button)`
   align-items: center;
 `
 
-const CardWrapper = styled.div<{ mainColor: string }>`
-  width: 302px;
-  height: 216px;
-
-  background: rgba(20, 22, 21, 0.8);
-  border-radius: 15px;
-  margin: 10px;
-  border: 1px solid ${(props) => props.mainColor};
-`
-const Header = styled.div<{ mainColor: string }>`
-  background: ${(props) => props.mainColor};
-  border-radius: 14px 14px 0 0;
-
-  height: 30px;
-  display: flex;
-  align-items: center;
-  padding-left: 10px;
-
-  color: black;
-  span.status {
-    margin-left: 5px;
-    font-weight: 700;
-  }
-`
-
-const Contents = styled.div<{ mainColor: string }>`
-  padding: 20px;
-  div.summary {
-    color: ${(props) => props.mainColor};
-    font-size: 25px;
-    display: flex;
-    height: 35px;
-    align-items: center;
-    justify-content: space-between;
-
-    > div:first-child {
-      color: ${(props) => props.mainColor};
-      height: 100%;
-
-      display: flex;
-      align-items: center;
-    }
-
-    > div:last-child {
-      height: 100%;
-      width: 90px;
-      background-color: ${(props) => props.mainColor};
-      border-radius: 8px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-weight: 700;
-      color: black;
-      font-size: 15px;
-    }
-  }
-  div.detail {
-    margin-top: 30px;
-    > div:not(:first-child) {
-      margin-top: 10px;
-    }
-    div.row {
-      display: flex;
-      justify-content: space-between;
-    }
-  }
-`
-
-type CardProps = {
-  type?: "up" | "down" | "ready"
-}
-const SECONDARY_COLOR = "#F57272"
-const Card: React.FC<CardProps> = ({ type }) => {
-  const {
-    token: { colorPrimaryText, colorTextSecondary, colorPrimary },
-  } = theme.useToken()
-
-  const mainColor = (function () {
-    if (type === "up") {
-      return colorPrimaryText
-    }
-    if (type === "down") {
-      return SECONDARY_COLOR
-    }
-    return gray[1]
-  })()
-
-  return (
-    <CardWrapper mainColor={mainColor}>
-      <Header mainColor={mainColor}>
-        <span className="number">#132245</span>
-        <span className="status">Expired</span>
-      </Header>
-      <Contents mainColor={mainColor}>
-        <div className="summary">
-          <div>$290.1194</div>
-          <div>+$0.1135</div>
-        </div>
-        <div className="detail">
-          <div className="row">
-            <span className="title">UP / Down Payout:</span>
-            <span className="content">1.67x / 2.50x</span>
-          </div>
-
-          <div className="row">
-            <span className="title">Locked Price:</span>
-            <span className="content">$ 290.2768</span>
-          </div>
-          <div className="row">
-            <span className="title">Prize Pool:</span>
-            <span className="content">17.0423 BNB</span>
-          </div>
-        </div>
-      </Contents>
-    </CardWrapper>
-  )
-}
-
 const Board = styled.div`
   margin-top: 250px;
   display: flex;
   justify-content: center;
 `
 
+export type RawRound = {
+  number: string
+  bear_amount: string
+  bull_amount: string
+  close_price: string
+  close_timestamp: string
+  lock_price: string
+  lock_timestamp: string
+  start_timestamp: string
+  total_amount: string
+}
+
+export type Round = {
+  bearAmount: number
+  bullAmount: number
+  totalAmount: number
+  closePrice: number
+  closeTimestamp: Date
+  lockTimestamp: Date
+  startTimestamp: Date
+  lockPrice: number
+  number: number
+}
+// expired: 결과까지 끝남
+// live: bet은 끝났고 5분뒤에 결과 나옴, 오직1개
+// next: 현재 bet 가능, 오직1개
+// later: 아직 bet불가 (다음 라운드)
+export type RoundState = "expired" | "live" | "next" | "later"
+const parseRound = (rawRound: RawRound) => {
+  const {
+    bear_amount,
+    bull_amount,
+    close_price,
+    close_timestamp,
+    lock_price,
+    lock_timestamp,
+    number: _number,
+    start_timestamp,
+    total_amount,
+  } = rawRound
+
+  const bearAmount = Number(bear_amount)
+  const bullAmount = Number(bull_amount)
+  const totalAmount = Number(total_amount)
+  const closePrice = Number(close_price)
+  const closeTimestamp = new Date(close_timestamp)
+  const lockTimestamp = new Date(lock_timestamp)
+  const startTimestamp = new Date(start_timestamp)
+  const lockPrice = Number(lock_price)
+  const number = Number(_number)
+
+  return {
+    bearAmount,
+    bullAmount,
+    totalAmount,
+    closePrice,
+    closeTimestamp,
+    lockTimestamp,
+    startTimestamp,
+    lockPrice,
+    number,
+  }
+}
+
 const Home: React.FC = () => {
   const {
     token: { colorPrimaryText },
   } = theme.useToken()
   const { Title } = Typography
-  const { account, address, modules } = useAptosModule()
-  console.log("account, address, module", account, address, module)
+  const { client, account, address, modules } = useAptosModule()
+  const hasModule = modules.some((m) => m.abi?.name === MODULE_NAME)
+  const [resources, setResources] = React.useState<Types.MoveResource[]>([])
+  console.log("resources", resources)
+
+  const resourceType = `${BETOS_ADDRESS}::${MODULE_NAME}::RoundContainer`
+  const resource = resources.find((r) => r?.type === resourceType)
+  const data = resource?.data as { rounds: any[] } | undefined
+  const fetchedRounds = data?.rounds
+  console.log("fetchedRounds", fetchedRounds)
+  // const rounds: RawRound[] = dummyRounds
+  const rounds = genDummy()
+  const sliced = rounds.slice(-5)
+  const parsed = sliced.map(parseRound)
+  console.log("parsed", parsed)
+  // 가장 최근 6개를 읽어온다.
+
+  useEffect(() => {
+    const fetch = async () => {
+      const resources = await client.getAccountResources(BETOS_ADDRESS)
+      setResources(resources)
+    }
+    fetch()
+  }, [])
+
+  const addRound = async (e: any) => {
+    e.preventDefault()
+    const funcName = `${BETOS_ADDRESS}::${MODULE_NAME}::add_round`
+    const transaction = {
+      type: "entry_function_payload",
+      function: funcName,
+      arguments: [],
+      type_arguments: [],
+    }
+    console.log("transaction", transaction)
+
+    await window.aptos.signAndSubmitTransaction(transaction)
+  }
+
+  // const handleBet = () => {
+  //   const transaction = {
+  //     type: "entry_function_payload",
+  //     function: `${BETOS_ADDRESS}::${MODULE_NAME}::set_message`,
+  //     arguments: [message],
+  //     type_arguments: [],
+  //   };
+  //   console.log("transaction", transaction);
+
+  //   await window.aptos.signAndSubmitTransaction(transaction);
+  // }
 
   return (
     <Wrapper>
+      <Button onClick={addRound}>Add round</Button>
       <Descriptions>
         <h2>Your Total Prize</h2>
         <h4 style={{ color: colorPrimaryText }}>+0.00013 BNB</h4>
@@ -179,11 +175,15 @@ const Home: React.FC = () => {
         </ClaimButton>
       </Descriptions>
       <Board>
-        <Card type="up" />
-        <Card type="down" />
-        <Card type="ready" />
-        <Card type="ready" />
-        <Card type="ready" />
+        {parsed.map((round, index) => {
+          const roundState: RoundState = (function () {
+            if (index < 2) return "expired"
+            if (index === 2) return "live"
+            if (index === 3) return "next"
+            return "later"
+          })()
+          return <Card key={index} round={round} roundState={roundState} />
+        })}
       </Board>
     </Wrapper>
   )

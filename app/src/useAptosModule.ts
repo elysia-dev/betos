@@ -3,8 +3,10 @@ import { Types, AptosClient } from "aptos"
 
 // Create an AptosClient to interact with devnet.
 const client = new AptosClient("https://fullnode.testnet.aptoslabs.com/v1")
-const DEPLOYER_ACCOUNT =
-  "0x17b98166814067f34128b99c1e2a04afab5f7b447fcb4471f0be5378c2a94efd"
+export const BETOS_ADDRESS =
+  "0x82391e84c5696d3499605464599c904e669bd2739a9f7d658b6e2a24b791738b"
+
+export const MODULE_NAME = "prediction"
 
 const useAptosModule = () => {
   // Retrieve aptos.account on initial render and store it.
@@ -29,17 +31,18 @@ const useAptosModule = () => {
   }, [])
 
   React.useEffect(() => {
-    client.getAccountModules(DEPLOYER_ACCOUNT).then(setModules)
+    client.getAccountModules(BETOS_ADDRESS).then(setModules)
   }, [])
 
   // React.useEffect(() => {
   //   if (!address) return
-  //   client.getAccountModules(DEPLOYER_ACCOUNT).then(setModules)
+  //   client.getAccountModules(BETOS_ADDRESS).then(setModules)
   // }, [address])
   return {
     address,
     account,
     modules,
+    client,
   }
 }
 export default useAptosModule
