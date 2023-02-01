@@ -134,12 +134,13 @@ module betos::prediction {
         let price_positive = i64::get_magnitude_if_positive(&price::get_price(&price)); // This will fail if the price is negative
 
         // 2. close epoch - 1
+        // vector index should be decremented by 1. e.g. epoch 1 -> index 0
         let current_epoch = round_container.current_epoch;
-        let prev_round = vector::borrow_mut<Round>(&mut round_container.rounds, current_epoch - 1);
+        let prev_round = vector::borrow_mut<Round>(&mut round_container.rounds, current_epoch - 2);
         safe_close_round(prev_round, price_positive);
 
         // 3. lock epoch
-        let current_round = vector::borrow_mut<Round>(&mut round_container.rounds, current_epoch);
+        let current_round = vector::borrow_mut<Round>(&mut round_container.rounds, current_epoch - 1);
         safe_lock_round(current_round, price_positive);
 
         // 4. start epoch
@@ -163,7 +164,8 @@ module betos::prediction {
         let current_epoch = round_container.current_epoch;
 
         // 3. lock epoch
-        let current_round = vector::borrow_mut<Round>(&mut round_container.rounds, current_epoch);
+        // vector index should be decremented by 1. e.g. epoch 1 -> index 0
+        let current_round = vector::borrow_mut<Round>(&mut round_container.rounds, current_epoch - 1);
         safe_lock_round(current_round, price_positive);
 
         // 4. start epoch
@@ -188,7 +190,7 @@ module betos::prediction {
         round_container.current_epoch = current_epoch + 1;
     }
 
-    public fun getRound(epoch: u64): (u64, u64, u64, u64, u64) acquires RoundContainer {
+    public fun get_round(epoch: u64): (u64, u64, u64, u64, u64) acquires RoundContainer {
         let round_container = borrow_global<RoundContainer>(@betos);
         let round = vector::borrow<Round>(&round_container.rounds, epoch - 1);
 
@@ -220,7 +222,8 @@ module betos::prediction {
         table::add(&mut bet_container.bets, epoch, Bet { epoch, amount, is_bull, claimed: false } );
 
         // 4. Add round.bull_amount
-        let round = vector::borrow_mut<Round>(&mut round_container.rounds, epoch);
+        // vector index should be decremented by 1. e.g. epoch 1 -> index 0
+        let round = vector::borrow_mut<Round>(&mut round_container.rounds, epoch - 1);
         if (is_bull) {
             round.bull_amount = round.bull_amount + amount;
         } else {
@@ -257,26 +260,39 @@ module betos::prediction {
         let resource_signer = account::create_signer_with_capability(&round_container.signer_cap);
         let num_rounds = vector::length(&round_container.rounds);
 
-        let i = 0;
+        let epoch = 1;
 
         loop {
-            if (i == num_rounds) {
+            if (epoch == num_rounds + 1) {
                 break
             };
 
-            let round = vector::borrow(&round_container.rounds, i);
-            let bet = table::borrow_mut(&mut bet_container.bets, i);
-
+            // Check if the user bet
+            if (!table::contains(&bet_container.bets, epoch)) {
+                epoch = epoch + 1;
+                continue
+            };
+            // Check if claimed
+            let bet = table::borrow_mut(&mut bet_container.bets, epoch);
             if (bet.claimed) {
+                epoch = epoch + 1;
+                continue
+            };
+
+            let round = vector::borrow(&round_container.rounds, epoch - 1);
+            if (round.close_price == 0) {
+                epoch = epoch + 1;
                 continue
             };
 
             claim(&resource_signer, account_address, round, bet);
 
-            i = i + 1;
+            epoch = epoch + 1;
         };
     }
 
+    // Not necessary
+    /*
     public entry fun set_close_price_by_oracle(account: &signer, epoch: u64, pyth_update_data: vector<vector<u8>>) acquires Events, RoundContainer {
         let price = update_and_fetch_price(account, pyth_update_data);
 
@@ -296,6 +312,27 @@ module betos::prediction {
         let round = vector::borrow_mut<Round>(&mut round_container.rounds, epoch);
         round.close_price = price_positive;
     }
+
+    public entry fun set_lock_price(account: &signer, epoch: u64, price: u64) acquires RoundContainer {
+        // check onlyOwner
+        let account_address = signer::address_of(account);
+        assert!(account_address == @admin, ENO_OWNER);
+
+        let round_container = borrow_global_mut<RoundContainer>(@betos);
+        let round = vector::borrow_mut<Round>(&mut round_container.rounds, epoch);
+        round.lock_price = price
+    }
+
+    public entry fun set_close_price(account: &signer, epoch: u64, price: u64) acquires RoundContainer {
+        // check onlyOwner
+        let account_address = signer::address_of(account);
+        assert!(account_address == @admin, ENO_OWNER);
+
+        let round_container = borrow_global_mut<RoundContainer>(@betos);
+        let round = vector::borrow_mut<Round>(&mut round_container.rounds, epoch);
+        round.close_price = price
+    }
+    */
 
     fun update_and_fetch_price(account: &signer, pyth_update_data: vector<vector<u8>>): Price {
         // First update the Pyth price feeds. The user pays the fee for the update.
@@ -334,26 +371,6 @@ module betos::prediction {
 
     fun test_claim_draw() {
 
-    }
-
-    public entry fun set_lock_price(account: &signer, epoch: u64, price: u64) acquires RoundContainer {
-        // check onlyOwner
-        let account_address = signer::address_of(account);
-        assert!(account_address == @admin, ENO_OWNER);
-
-        let round_container = borrow_global_mut<RoundContainer>(@betos);
-        let round = vector::borrow_mut<Round>(&mut round_container.rounds, epoch);
-        round.lock_price = price
-    }
-
-    public entry fun set_close_price(account: &signer, epoch: u64, price: u64) acquires RoundContainer {
-        // check onlyOwner
-        let account_address = signer::address_of(account);
-        assert!(account_address == @admin, ENO_OWNER);
-
-        let round_container = borrow_global_mut<RoundContainer>(@betos);
-        let round = vector::borrow_mut<Round>(&mut round_container.rounds, epoch);
-        round.close_price = price
     }
 
     #[test_only]
