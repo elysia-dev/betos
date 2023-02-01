@@ -35,6 +35,74 @@ const ClaimButton = styled(Button)`
   align-items: center;
 `
 
+const CardWrapper = styled.div<{ mainColor: string }>`
+  width: 302px;
+  height: 216px;
+
+  background: rgba(20, 22, 21, 0.8);
+  border-radius: 15px;
+  margin: 10px;
+  border: 1px solid ${(props) => props.mainColor};
+`
+const Header = styled.div<{ mainColor: string }>`
+  background: ${(props) => props.mainColor};
+  border-radius: 14px 14px 0 0;
+
+  height: 30px;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+
+  color: black;
+  span.status {
+    margin-left: 5px;
+    font-weight: 700;
+  }
+`
+
+const Contents = styled.div<{ mainColor: string }>`
+  padding: 20px;
+  div.summary {
+    color: ${(props) => props.mainColor};
+    font-size: 25px;
+    display: flex;
+    height: 35px;
+    align-items: center;
+    justify-content: space-between;
+
+    > div:first-child {
+      color: ${(props) => props.mainColor};
+      height: 100%;
+
+      display: flex;
+      align-items: center;
+    }
+
+    > div:last-child {
+      height: 100%;
+      width: 90px;
+      background-color: ${(props) => props.mainColor};
+      border-radius: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: 700;
+      color: black;
+      font-size: 15px;
+    }
+  }
+  div.detail {
+    margin-top: 30px;
+    > div:not(:first-child) {
+      margin-top: 10px;
+    }
+    div.row {
+      display: flex;
+      justify-content: space-between;
+    }
+  }
+`
+
 type CardProps = {
   type?: "up" | "down" | "ready"
 }
@@ -43,9 +111,6 @@ const Card: React.FC<CardProps> = ({ type }) => {
   const {
     token: { colorPrimaryText, colorTextSecondary, colorPrimary },
   } = theme.useToken()
-  console.log("colorPrimary", colorPrimary)
-  console.log("colorPrimaryText", colorPrimaryText)
-  console.log("colorTextSecondary", colorTextSecondary)
 
   const mainColor = (function () {
     if (type === "up") {
@@ -56,83 +121,14 @@ const Card: React.FC<CardProps> = ({ type }) => {
     }
     return gray[1]
   })()
-  console.log("mainColor", mainColor)
-
-  const CardWrapper = styled.div`
-    width: 302px;
-    height: 216px;
-
-    background: rgba(20, 22, 21, 0.8);
-    border-radius: 15px;
-    margin: 10px;
-    border: 1px solid ${mainColor};
-  `
-  const Header = styled.div`
-    background: ${mainColor};
-    border-radius: 14px 14px 0 0;
-
-    height: 30px;
-    display: flex;
-    align-items: center;
-    padding-left: 10px;
-
-    color: black;
-    span.status {
-      margin-left: 5px;
-      font-weight: 700;
-    }
-  `
-
-  const Contents = styled.div`
-    padding: 20px;
-    div.summary {
-      color: ${mainColor};
-      font-size: 25px;
-      display: flex;
-      height: 35px;
-      align-items: center;
-      justify-content: space-between;
-
-      > div:first-child {
-        color: ${mainColor};
-        height: 100%;
-
-        display: flex;
-        align-items: center;
-      }
-
-      > div:last-child {
-        height: 100%;
-        width: 90px;
-        background-color: ${mainColor};
-        border-radius: 8px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-weight: 700;
-        color: black;
-        font-size: 15px;
-      }
-    }
-    div.detail {
-      margin-top: 30px;
-      > div:not(:first-child) {
-        margin-top: 10px;
-      }
-      div.row {
-        display: flex;
-        justify-content: space-between;
-      }
-    }
-  `
 
   return (
-    <CardWrapper>
-      <Header>
+    <CardWrapper mainColor={mainColor}>
+      <Header mainColor={mainColor}>
         <span className="number">#132245</span>
         <span className="status">Expired</span>
       </Header>
-      <Contents>
+      <Contents mainColor={mainColor}>
         <div className="summary">
           <div>$290.1194</div>
           <div>+$0.1135</div>
