@@ -81,7 +81,7 @@ module betos::prediction {
         move_to<Events>(account, events);
     }
 
-    // TODO: check the signer is @deployer
+    // onlyOwner
     public entry fun add_round(account: &signer) acquires RoundContainer {
         let account_address = signer::address_of(account);
         assert!(account_address == @admin, ENO_OWNER);

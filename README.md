@@ -18,7 +18,7 @@ Do you want to publish this package under the resource account's address xxxx?
 Put the resource account address above in xxxx.
 
 ```sh
-# ./test needs profile two default, better1
-$ ADDRESS=xxxx ./test.sh
+# ./test needs two profiles: test, test2
+$ BETOS=xxxx ./test.sh
 
 ```
