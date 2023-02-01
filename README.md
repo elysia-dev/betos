@@ -14,17 +14,12 @@ $ aptos move create-resource-account-and-publish-package --seed 3234 --address-n
 Do you want to publish this package under the resource account's address xxxx?
 ```
 
-Put the resource account address above in xxxx.
-
-```sh
-# ./test needs two profiles: test, test2
-$ BETOS=xxxx ./test.sh
-
-```
-
 ## Run admin functions
 
+Put the resource account address in xxxx.
+
 ```sh
+export BETOS_ADDRESS=xxxx  # Require 0x prefix
 export APTOS_KEY=1acfea... # No 0x prefix
 cd scripts
 yarn run ts-node execute.ts --action start
