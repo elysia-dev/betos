@@ -1,22 +1,43 @@
 module betos::prediction {
     use std::signer;
     use std::vector;
+
+    use aptos_std::table::{Self, Table};
+    use aptos_std::event;
+
     use aptos_framework::account::SignerCapability;
     use aptos_framework::resource_account;
     use aptos_framework::account;
     use aptos_framework::timestamp;
-    use aptos_std::table::{Self, Table};
     use aptos_framework::coin::{Self};
     use aptos_framework::aptos_coin::{AptosCoin};
+
+    use pyth::pyth;
+    use pyth::price_identifier;
+    use pyth::i64;
+    use pyth::price::{Self,Price};
 
     // #[test_only]
     // use std::debug;
 
-    const ENO_OWNER: u64 = 0;
+        // For the entire list of price_ids head to https://pyth.network/developers/price-feed-ids/#pyth-cross-chain-testnet
+    const APTOS_USD_PRICE_FEED_IDENTIFIER : vector<u8> = x"44a93dddd8effa54ea51076c4e851b6cbbfd938e82eb90197de38fe8876bb66e";
 
+    const ENO_OWNER: u64 = 0;
+    const EBET_TOO_EARLY: u64 = 1;
+
+    struct Events has key {
+        update_price_events: event::EventHandle<UpdatePriceEvent>,
+    }
+
+    struct UpdatePriceEvent has drop, store {
+        price: Price,
+    }
+
+    // only exists in @betos
     struct RoundContainer has key {
         signer_cap: SignerCapability,
-        rounds: vector<Round>
+        rounds: vector<Round> // index is called as `epoch`
     }
 
     struct Round has key, store {
@@ -30,6 +51,7 @@ module betos::prediction {
         close_price: u64,
     }
 
+    // address => BetContainer => bets: HashTable(epoch -> Bet)
     struct Bet has store {
         epoch: u64,
         is_bull: bool,
@@ -38,29 +60,35 @@ module betos::prediction {
     }
 
     struct BetContainer has key {
-        bets: Table<u64, Bet>
+        bets: Table<u64, Bet> // key: epoch -> value: Bet
     }
 
+    // account: @betos
     fun init_module(account: &signer) {
         // Destroys temporary storage for resource account signer capability and returns signer capability.
-        let resource_signer_cap = resource_account::retrieve_resource_account_cap(account, @deployer);
+        let resource_signer_cap = resource_account::retrieve_resource_account_cap(account, @admin);
         let round_container = RoundContainer {
             signer_cap: resource_signer_cap,
             rounds: vector::empty<Round>()
         };
 
+        let events = Events {
+            update_price_events: account::new_event_handle<UpdatePriceEvent>(account),
+        };
+
         coin::register<AptosCoin>(account);
         move_to<RoundContainer>(account, round_container);
+        move_to<Events>(account, events);
     }
 
     // TODO: check the signer is @deployer
     public entry fun add_round(account: &signer) acquires RoundContainer {
         let account_address = signer::address_of(account);
-        assert!(account_address == @deployer, ENO_OWNER);
+        assert!(account_address == @admin, ENO_OWNER);
         let round_container = borrow_global_mut<RoundContainer>(@betos);
         // let resource_signer = account::create_signer_with_capability(&round_container.signer_cap);
 
-        let interval_seconds = 10;
+        let interval_seconds = 100;
         let start_timestamp = timestamp::now_seconds();
         let lock_timestamp = start_timestamp + interval_seconds;
         let close_timestamp = start_timestamp + 2 * interval_seconds;
@@ -81,8 +109,12 @@ module betos::prediction {
 
     // epoch: the index of round_container.rounds vector
     public entry fun bet(better: &signer, epoch: u64, amount: u64, is_bull: bool) acquires RoundContainer, BetContainer {
-        let better_address = signer::address_of(better);
+        // TODO: check timestamp
+        // 0. start_timestamp <= now < lock_timestamp
+        // let now = timestamp::now_seconds();
+        // assert!(start_timestamp <= now, EBET_TOO_EARLY);
 
+        let better_address = signer::address_of(better);
         // 1. Create if not exists
         if (!exists<BetContainer>(better_address)) {
             move_to<BetContainer>(better, BetContainer { bets: table::new<u64, Bet>() });
@@ -95,7 +127,7 @@ module betos::prediction {
         let in_coin = coin::withdraw<AptosCoin>(better, amount);
         coin::deposit(resource_signer_address, in_coin);
 
-        // 3. Insert into table
+        // 3. Insert BetInfo into table
         let bet_container = borrow_global_mut<BetContainer>(better_address);
         table::add(&mut bet_container.bets, epoch, Bet { epoch, amount, is_bull, claimed: false } );
 
@@ -157,6 +189,38 @@ module betos::prediction {
         };
     }
 
+    public entry fun set_close_price_by_oracle(account: &signer, epoch: u64, pyth_update_data: vector<vector<u8>>) acquires Events, RoundContainer {
+        // TODO: close ts <= timestamp < close_ts + threshold
+        let price = update_and_fetch_price(account, pyth_update_data);
+
+        let price_positive = i64::get_magnitude_if_positive(&price::get_price(&price)); // This will fail if the price is negative
+        // let expo_magnitude = i64::get_magnitude_if_negative(&price::get_expo(&price)); // This will fail if the exponent is positive
+        // let price_in_aptos_coin =  (OCTAS_PER_APTOS * pow(10, expo_magnitude)) / price_positive; // 1 USD in APT
+
+        let events = borrow_global_mut<Events>(@betos);
+        event::emit_event<UpdatePriceEvent>(
+            &mut events.update_price_events,
+            UpdatePriceEvent {
+                price
+            }
+        );
+
+        let round_container = borrow_global_mut<RoundContainer>(@betos);
+        let round = vector::borrow_mut<Round>(&mut round_container.rounds, epoch);
+        round.close_price = price_positive;
+    }
+
+    fun update_and_fetch_price(account: &signer, pyth_update_data: vector<vector<u8>>): Price {
+        // First update the Pyth price feeds. The user pays the fee for the update.
+        let coins = coin::withdraw<AptosCoin>(account, pyth::get_update_fee(&pyth_update_data));
+
+        pyth::update_price_feeds(pyth_update_data, coins);
+
+        // Now we can use the prices which we have just updated
+        pyth::get_price(price_identifier::from_byte_vec(APTOS_USD_PRICE_FEED_IDENTIFIER)) // Get recent price (will fail if price is too old)
+    }
+
+    #[test(creator = @0xa11ce, framework = @0x1)]
     fun test_bet_bull_after_close() {
     }
 
@@ -188,7 +252,7 @@ module betos::prediction {
     public entry fun set_lock_price(account: &signer, epoch: u64, price: u64) acquires RoundContainer {
         // check onlyOwner
         let account_address = signer::address_of(account);
-        assert!(account_address == @deployer, ENO_OWNER);
+        assert!(account_address == @admin, ENO_OWNER);
 
         let round_container = borrow_global_mut<RoundContainer>(@betos);
         let round = vector::borrow_mut<Round>(&mut round_container.rounds, epoch);
@@ -198,7 +262,7 @@ module betos::prediction {
     public entry fun set_close_price(account: &signer, epoch: u64, price: u64) acquires RoundContainer {
         // check onlyOwner
         let account_address = signer::address_of(account);
-        assert!(account_address == @deployer, ENO_OWNER);
+        assert!(account_address == @admin, ENO_OWNER);
 
         let round_container = borrow_global_mut<RoundContainer>(@betos);
         let round = vector::borrow_mut<Round>(&mut round_container.rounds, epoch);
