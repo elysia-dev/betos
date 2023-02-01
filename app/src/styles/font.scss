@@ -1,0 +1,350 @@
+@font-face {
+  font-family: NotoSansKR;
+  src: url("../assets/fonts/noto-sans-kr-regular.woff") format("truetype");
+}
+
+@font-face {
+  font-family: NotoSansKR-bold;
+  src: url("../assets/fonts/noto-sans-kr-bold.woff") format("truetype");
+}
+
+@font-face {
+  font-family: NotoSansKR-light;
+  src: url("../assets/fonts/noto-sans-kr-light.woff") format("truetype");
+}
+
+@font-face {
+  font-family: Urbanist;
+  src: url("../assets/fonts/Urbanist-Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: Urbanist-bold;
+  src: url("../assets/fonts/Urbanist-Bold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: Urbanist-light;
+  src: url("../assets/fonts/Urbanist-Light.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: Poppins;
+  src: url("../assets/fonts/Poppins-Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: Poppins-bold;
+  src: url("../assets/fonts/Poppins-Bold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: Poppins-light;
+  src: url("../assets/fonts/Poppins-Light.ttf") format("truetype");
+}
+
+body {
+  font-family: NotoSansKR;
+}
+
+//! font-wegit 에 따른 font 타입
+// light: ~ 300
+// normal: 400~600
+// bold: 700 ~
+
+//! 폰트 추가 메뉴얼
+// ex) n_h1 이라는 폰트를 추가하려할 때
+// 1. font-face 추가 (light, normal, bold 3가지)
+// @font-face {
+//  font-family: N_H1;
+//  src: url("../../assets/fonts/N_H1.woff") format("truetype");
+// }
+// 2. classname에 연결 (pc, tablet, mobile 3가지, .en도 추가)
+// .n_h1 {
+//  font-family: N_H1;
+//  ...
+//  &.en {
+//  ...
+//  }
+// }
+//
+
+// pc
+.main1 {
+  font-family: NotoSansKR-light;
+  font-weight: 300;
+  font-size: 160px;
+  line-height: 145px;
+
+  &.en {
+    font-family: Urbanist-light;
+  }
+}
+
+.main2 {
+  font-family: NotoSansKR-light;
+  font-weight: 400;
+  font-size: 40px;
+  line-height: 48px;
+
+  &.en {
+    font-family: Urbanist-light;
+  }
+}
+
+h1 {
+  font-family: NotoSansKR;
+  font-weight: 500;
+  font-size: 64px;
+  line-height: 77px;
+
+  &.en {
+    font-family: Urbanist;
+  }
+}
+
+h2 {
+  font-family: NotoSansKR;
+  font-weight: 500;
+  font-size: 48px;
+  line-height: 58px;
+
+  &.en {
+    font-family: Urbanist;
+  }
+}
+
+h3 {
+  font-family: NotoSansKR;
+  font-weight: 500;
+  font-size: 48px;
+  line-height: 65px;
+
+  &.en {
+    font-family: Urbanist;
+  }
+}
+
+h4 {
+  font-family: NotoSansKR-bold;
+  font-weight: 700;
+  font-size: 36px;
+  line-height: 49px;
+
+  &.en {
+    font-family: Urbanist-bold;
+  }
+}
+
+h5 {
+  font-family: NotoSansKR-bold;
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 33px;
+
+  &.en {
+    font-family: Urbanist-bold;
+  }
+}
+
+h6 {
+  font-family: NotoSansKR-light;
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 29px;
+
+  &.en {
+    font-family: Urbanist-light;
+  }
+}
+
+p {
+  font-family: NotoSansKR-light;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 150%;
+
+  &.en {
+    font-family: Urbanist-light;
+  }
+}
+
+button,
+.btn {
+  font-family: NotoSansKR;
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 22px;
+
+  &.en {
+    font-family: Urbanist;
+  }
+}
+
+h1.bold {
+  font-family: NotoSansKR-bold;
+  font-weight: 700;
+  font-size: 96px;
+  line-height: 115px;
+  &.en {
+    font-family: Urbanist-bold;
+  }
+}
+h2.bold {
+  font-family: NotoSansKR-bold;
+  font-weight: 700;
+  font-size: 64px;
+  line-height: 77px;
+  &.en {
+    font-family: Urbanist-bold;
+  }
+}
+// tablet
+@media (max-width: 1024px) {
+  .main1 {
+    font-weight: 300;
+    font-size: 128px;
+    line-height: 86.5%;
+  }
+
+  .main2 {
+    font-weight: 400;
+    font-size: 40px;
+    line-height: 48px;
+  }
+
+  h1 {
+    font-weight: 500;
+    font-size: 64px;
+    line-height: 77px;
+  }
+
+  h2 {
+    font-weight: 500;
+    font-size: 48px;
+    line-height: 58px;
+  }
+
+  h3 {
+    font-weight: 500;
+    font-size: 48px;
+    line-height: 65px;
+  }
+
+  h4 {
+    font-weight: 700;
+    font-size: 32px;
+    line-height: 44px;
+  }
+
+  h5 {
+    font-weight: 600;
+    font-size: 24px;
+    line-height: 33px;
+  }
+
+  h6 {
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 24px;
+  }
+
+  p {
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 150%;
+  }
+
+  button,
+  .btn {
+    font-weight: 500;
+    font-size: 18px;
+    line-height: 22px;
+  }
+
+  h1.bold {
+    font-weight: 700;
+    font-size: 80px;
+    line-height: 96px;
+  }
+  h2.bold {
+    font-weight: 700;
+    font-size: 64px;
+    line-height: 77px;
+  }
+}
+
+// mobile
+@media (max-width: 640px) {
+  .main1 {
+    font-weight: 300;
+    font-size: 48px;
+    line-height: 100%;
+  }
+
+  .main2 {
+    font-weight: 300;
+    font-size: 24px;
+    line-height: 100%;
+  }
+
+  h1 {
+    font-weight: 500;
+    font-size: 32px;
+    line-height: 38px;
+  }
+
+  h2 {
+    font-weight: 500;
+    font-size: 24px;
+    line-height: 29px;
+  }
+
+  h3 {
+    font-weight: 500;
+    font-size: 20px;
+    line-height: 27px;
+  }
+
+  h4 {
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 27px;
+  }
+
+  h5 {
+    font-weight: 600;
+    font-size: 18px;
+    line-height: 25px;
+  }
+
+  h6 {
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 19px;
+  }
+
+  p {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 150%;
+  }
+
+  button,
+  .btn {
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 17px;
+  }
+
+  h1.bold {
+    font-weight: 700;
+    font-size: 40px;
+    line-height: 48px;
+  }
+  h2.bold {
+    font-weight: 700;
+    font-size: 40px;
+    line-height: 48px;
+  }
+}
