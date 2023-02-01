@@ -37,10 +37,12 @@ module betos::prediction {
     // only exists in @betos
     struct RoundContainer has key {
         signer_cap: SignerCapability,
-        rounds: vector<Round> // index is called as `epoch`
+        rounds: vector<Round>, // index is called as `epoch`
+        current_epoch: u64,
     }
 
     struct Round has key, store {
+        epoch: u64,
         start_timestamp: u64, // block.
         lock_timestamp: u64,
         close_timestamp: u64,
@@ -69,7 +71,8 @@ module betos::prediction {
         let resource_signer_cap = resource_account::retrieve_resource_account_cap(account, @admin);
         let round_container = RoundContainer {
             signer_cap: resource_signer_cap,
-            rounds: vector::empty<Round>()
+            rounds: vector::empty<Round>(),
+            current_epoch: 0
         };
 
         let events = Events {
@@ -81,19 +84,15 @@ module betos::prediction {
         move_to<Events>(account, events);
     }
 
-    // onlyOwner
-    public entry fun add_round(account: &signer) acquires RoundContainer {
-        let account_address = signer::address_of(account);
-        assert!(account_address == @admin, ENO_OWNER);
-        let round_container = borrow_global_mut<RoundContainer>(@betos);
-        // let resource_signer = account::create_signer_with_capability(&round_container.signer_cap);
-
+    public fun start_round(rounds: &mut vector<Round>, epoch: u64) {
+        // TODO: change to 300
         let interval_seconds = 100;
         let start_timestamp = timestamp::now_seconds();
         let lock_timestamp = start_timestamp + interval_seconds;
         let close_timestamp = start_timestamp + 2 * interval_seconds;
 
         let new_round = Round {
+            epoch: epoch,
             start_timestamp,
             lock_timestamp,
             close_timestamp,
@@ -104,7 +103,96 @@ module betos::prediction {
             lock_price: 0,
         };
 
-        vector::push_back(&mut round_container.rounds, new_round);
+        vector::push_back(rounds, new_round);
+    }
+
+    public fun safe_start_round(rounds: &mut vector<Round>, epoch: u64) {
+        // TODO: check called onlyOnce
+        // TODO: check epoch n - 2 has ended
+        // TODO: check now >= epoch n - 2 . close_timestamp
+        start_round(rounds, epoch);
+    }
+
+    public fun safe_lock_round(round: &mut Round, price: u64) {
+        round.lock_price = price;
+    }
+
+    public fun safe_close_round(round: &mut Round, price: u64) {
+        round.close_price = price;
+    }
+
+    // TODO: rename to execute_round
+    // onlyOwner
+    public entry fun execute_round(account: &signer, pyth_update_data: vector<vector<u8>>) acquires RoundContainer {
+        let account_address = signer::address_of(account);
+        assert!(account_address == @admin, ENO_OWNER);
+        let round_container = borrow_global_mut<RoundContainer>(@betos);
+        // let resource_signer = account::create_signer_with_capability(&round_container.signer_cap);
+
+        // 1. get oracle price
+        let price = update_and_fetch_price(account, pyth_update_data);
+        let price_positive = i64::get_magnitude_if_positive(&price::get_price(&price)); // This will fail if the price is negative
+
+        // 2. close epoch - 1
+        let current_epoch = round_container.current_epoch;
+        let prev_round = vector::borrow_mut<Round>(&mut round_container.rounds, current_epoch - 1);
+        safe_close_round(prev_round, price_positive);
+
+        // 3. lock epoch
+        let current_round = vector::borrow_mut<Round>(&mut round_container.rounds, current_epoch);
+        safe_lock_round(current_round, price_positive);
+
+        // 4. start epoch
+        safe_start_round(&mut round_container.rounds, current_epoch + 1);
+        // 5. epoch += 1
+        round_container.current_epoch = current_epoch + 1;
+    }
+
+    // onlyOwner
+    // lock -> start
+    public entry fun genesis_lock_round(account: &signer, pyth_update_data: vector<vector<u8>>) acquires RoundContainer {
+        let account_address = signer::address_of(account);
+        assert!(account_address == @admin, ENO_OWNER);
+        let round_container = borrow_global_mut<RoundContainer>(@betos);
+        // let resource_signer = account::create_signer_with_capability(&round_container.signer_cap);
+
+        // 1. get oracle price
+        let price = update_and_fetch_price(account, pyth_update_data);
+        let price_positive = i64::get_magnitude_if_positive(&price::get_price(&price)); // This will fail if the price is negative
+
+        let current_epoch = round_container.current_epoch;
+
+        // 3. lock epoch
+        let current_round = vector::borrow_mut<Round>(&mut round_container.rounds, current_epoch);
+        safe_lock_round(current_round, price_positive);
+
+        // 4. start epoch
+        safe_start_round(&mut round_container.rounds, current_epoch + 1);
+        // 5. epoch += 1
+        round_container.current_epoch = current_epoch + 1;
+    }
+
+    // onlyOwner
+    // start
+    public entry fun genesis_start_round(account: &signer) acquires RoundContainer {
+        let account_address = signer::address_of(account);
+        assert!(account_address == @admin, ENO_OWNER);
+        let round_container = borrow_global_mut<RoundContainer>(@betos);
+        // let resource_signer = account::create_signer_with_capability(&round_container.signer_cap);
+
+        let current_epoch = round_container.current_epoch;
+
+        // 4. start epoch
+        safe_start_round(&mut round_container.rounds, current_epoch + 1);
+        // 5. epoch += 1
+        round_container.current_epoch = current_epoch + 1;
+    }
+
+    public fun getRound(epoch: u64): (u64, u64, u64, u64, u64) acquires RoundContainer {
+        let round_container = borrow_global<RoundContainer>(@betos);
+        let round = vector::borrow<Round>(&round_container.rounds, epoch - 1);
+
+        (round.start_timestamp, round.lock_timestamp, round.close_timestamp, round.close_price, round.lock_price)
     }
 
     // epoch: the index of round_container.rounds vector
@@ -190,7 +278,6 @@ module betos::prediction {
     }
 
     public entry fun set_close_price_by_oracle(account: &signer, epoch: u64, pyth_update_data: vector<vector<u8>>) acquires Events, RoundContainer {
-        // TODO: close ts <= timestamp < close_ts + threshold
         let price = update_and_fetch_price(account, pyth_update_data);
 
         let price_positive = i64::get_magnitude_if_positive(&price::get_price(&price)); // This will fail if the price is negative
