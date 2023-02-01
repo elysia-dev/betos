@@ -4,6 +4,7 @@ import { Button, theme, Typography } from "antd"
 import PartyImage from "../assets/party.png"
 import { tokenToString } from "typescript"
 import { gray } from "@ant-design/colors"
+import useAptosModule from "../useAptosModule"
 
 const Wrapper = styled.div``
 
@@ -164,6 +165,9 @@ const Home: React.FC = () => {
     token: { colorPrimaryText },
   } = theme.useToken()
   const { Title } = Typography
+  const { account, address, modules } = useAptosModule()
+  console.log("account, address, module", account, address, module)
+
   return (
     <Wrapper>
       <Descriptions>
