@@ -1,7 +1,7 @@
 import styled from "styled-components"
 import { Button, InputNumber, theme, Typography } from "antd"
 import { gray } from "@ant-design/colors"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { RoundState } from "./Home"
 
 import { formatNumber, numberToApt } from "../utils"
@@ -112,6 +112,37 @@ type CardProps = {
   roundState: RoundState
   betStatusOnCurrentRound?: BetStatus
   currentPrice: number
+}
+
+function useInterval(callback: any, delay: any) {
+  const savedCallback = useRef<any>()
+
+  // Remember the latest callback.
+  useEffect(() => {
+    savedCallback.current = callback
+  }, [callback])
+
+  // Set up the interval.
+  useEffect(() => {
+    function tick() {
+      savedCallback.current()
+    }
+    if (delay !== null) {
+      const id = setInterval(tick, delay)
+      return () => clearInterval(id)
+    }
+  }, [delay])
+}
+
+const Counter = () => {
+  const [count, setCount] = useState(0)
+
+  useInterval(() => {
+    // Your custom logic here
+    setCount(count + 1)
+  }, 1000)
+
+  return <h1>{count}</h1>
 }
 
 const Card: React.FC<CardProps> = ({
@@ -249,6 +280,7 @@ const Card: React.FC<CardProps> = ({
                 {currentPrice
                   ? `$${formatNumber(currentPrice, 4)}`
                   : "Loading..."}
+                <Counter />
               </div>
             </div>
           </div>
