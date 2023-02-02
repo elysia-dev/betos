@@ -2,10 +2,12 @@ import styled from "styled-components"
 import { Button, InputNumber, theme, Typography } from "antd"
 import { gray } from "@ant-design/colors"
 import { useEffect, useState } from "react"
-import { BetStatus, Round, RoundState } from "./Home"
+import { Round, RoundState } from "./Home"
+
 import { formatNumber, numberToApt } from "../utils"
 import useAptosModule, { BETOS_ADDRESS, MODULE_NAME } from "../useAptosModule"
 import { AptosClient } from "aptos"
+import { BetStatus } from "../types"
 const SECONDARY_COLOR = "#F57272"
 const PRIMARY_TEXT_COLOR = "#61c19b"
 
@@ -245,7 +247,11 @@ const Card: React.FC<CardProps> = ({
           <div>
             <div>Current Price</div>
             <div className="summary">
-              <div className="price">${formatNumber(currentPrice, 4)}</div>
+              <div className="price">
+                {currentPrice
+                  ? `$${formatNumber(currentPrice, 4)}`
+                  : "Loading..."}
+              </div>
             </div>
           </div>
         )}

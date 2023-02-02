@@ -1,3 +1,5 @@
+import { Price, PriceFeed } from "@pythnetwork/pyth-common-js"
+import { AptosPriceServiceConnection } from "@pythnetwork/pyth-aptos-js"
 import React, { useEffect, useMemo, useState } from "react"
 import styled from "styled-components"
 import { Button, theme, Typography } from "antd"
@@ -6,9 +8,8 @@ import { Types, AptosClient, getAddressFromAccountOrAddress } from "aptos"
 import useAptosModule, { MODULE_NAME, BETOS_ADDRESS } from "../useAptosModule"
 import Card from "./Card"
 import dummyRounds, { genDummy } from "./dummyRounds"
-import { aptToNumber } from "../utils"
-import { Price, PriceFeed } from "@pythnetwork/pyth-common-js"
-import { AptosPriceServiceConnection } from "@pythnetwork/pyth-aptos-js"
+import { aptToNumber, parseBetStatus } from "../utils"
+import { BetStatus } from "../types"
 
 const Wrapper = styled.div``
 
@@ -123,30 +124,6 @@ const parseRound = (rawRound: RawRound, considerDigit?: boolean) => {
   }
 }
 
-type RawBetStatus = {
-  amount: string
-  claimed: boolean
-  epoch: string
-  is_bull: boolean
-}
-export type BetStatus = {
-  amount: number
-  claimed: boolean
-  epoch: number
-  isBull: boolean
-}
-
-const parseBetStatus = (rawBetStatus: RawBetStatus): BetStatus => {
-  const { amount, claimed, epoch, is_bull } = rawBetStatus
-  const parsed = {
-    amount: aptToNumber(Number(amount)),
-    claimed,
-    epoch: Number(epoch),
-    isBull: is_bull,
-  }
-  return parsed
-}
-
 const APT_USD_TESTNET_PRICE_ID =
   "44a93dddd8effa54ea51076c4e851b6cbbfd938e82eb90197de38fe8876bb66e"
 const TESTNET_PRICE_SERVICE = "https://xc-testnet.pyth.network"
@@ -156,7 +133,6 @@ const Home: React.FC = () => {
   const {
     token: { colorPrimaryText },
   } = theme.useToken()
-  const { Title } = Typography
   const { client, account, address, modules } = useAptosModule()
   const hasModule = modules.some((m) => m.abi?.name === MODULE_NAME)
 
@@ -173,19 +149,30 @@ const Home: React.FC = () => {
   const [betStatusOnCurrentRound, setBetStatusOnCurrentRound] =
     useState<BetStatus>()
 
-  console.log("betStatusOnCurrentRound", betStatusOnCurrentRound)
+  console.log("accountResources", accountResources)
+  // console.log("betStatusOnCurrentRound", betStatusOnCurrentRound)
 
+  const RESOURCE_KEY_BET = `${BETOS_ADDRESS}::${MODULE_NAME}::BetContainer`
   const handleOfBetContainer = useMemo(() => {
-    // TODO: 여기 왜 address가 아니라 bettos address를 넣어야 하는지 모르겠다.
-    const RESOURCE_KEY_BET = `${BETOS_ADDRESS}::${MODULE_NAME}::BetContainer`
     const accountResource = accountResources.find(
       (r) => r?.type === RESOURCE_KEY_BET,
     )
     const data = accountResource?.data as
-      | { bets: { handle: string } }
+      | { bets: { handle: string }; epochs: number[] }
       | undefined
 
     return data?.bets?.handle
+  }, [accountResources])
+
+  const epochsOfBetContainer = useMemo(() => {
+    const accountResource = accountResources.find(
+      (r) => r?.type === RESOURCE_KEY_BET,
+    )
+    const data = accountResource?.data as
+      | { bets: { handle: string }; epochs: string[] }
+      | undefined
+
+    return data?.epochs
   }, [accountResources])
 
   const RESOURCE_KEY_ROUND = `${BETOS_ADDRESS}::${MODULE_NAME}::RoundContainer`
@@ -258,28 +245,78 @@ const Home: React.FC = () => {
     fetchAccountResources()
   }, [address])
 
-  const getData = async () => {
-    if (!handleOfBetContainer) return
-
-    const getTokenTableItemRequest = {
-      // key_type: "0x3::token::TokenDataId",
-      // value_type: "0x3::token::TokenData",
+  const getTableItemRequest = (key: string) => {
+    if (key === "0" || !key) return null
+    return {
       key_type: `u64`,
       value_type: `${BETOS_ADDRESS}::${MODULE_NAME}::Bet`,
-      key: currentEpoch,
+      key,
     }
-
-    const rawBetStatus = await client.getTableItem(
-      handleOfBetContainer,
-      getTokenTableItemRequest,
-    )
-    const parsed = parseBetStatus(rawBetStatus)
-    setBetStatusOnCurrentRound(parsed)
   }
 
+  const getBetStatus = async (
+    handleOfBetContainer: any,
+    tableItemRequest: any,
+  ) => {
+    if (!handleOfBetContainer) return
+    if (!tableItemRequest) return
+    const rawBetStatus = await client.getTableItem(
+      handleOfBetContainer,
+      tableItemRequest,
+    )
+    return rawBetStatus
+  }
+
+  // current round의 bet status fetch
   useEffect(() => {
-    getData()
+    if (!handleOfBetContainer) return
+    const fetch = async () => {
+      const tableItemRequest = getTableItemRequest(currentEpoch)
+      const rawBetStatus = await getBetStatus(
+        handleOfBetContainer,
+        tableItemRequest,
+      )
+      if (!rawBetStatus) return
+      const parsed = parseBetStatus(rawBetStatus)
+      setBetStatusOnCurrentRound(parsed)
+    }
+    fetch()
   }, [handleOfBetContainer])
+
+  useEffect(() => {
+    const fetch = async () => {
+      console.log("epochsOfBetContainer", epochsOfBetContainer)
+      if (!epochsOfBetContainer) return
+      if (!handleOfBetContainer) return
+
+      const promises = epochsOfBetContainer.map(async (epoch) => {
+        const tableItemRequest = getTableItemRequest(epoch)
+        const rawBetStatus = await getBetStatus(
+          handleOfBetContainer,
+          tableItemRequest,
+        )
+        if (!rawBetStatus) return
+        const parsed = parseBetStatus(rawBetStatus)
+        return parsed
+      })
+      const result = await Promise.all(promises)
+      console.log("result", result)
+    }
+    fetch()
+  }, [epochsOfBetContainer, handleOfBetContainer])
+
+  const fetchBetStatus = async (epoch: string, handleOfBetContainer: any) => {
+    if (epoch === "0") return
+    if (!handleOfBetContainer) return
+    const tableItemRequest = getTableItemRequest(epoch)
+    const rawBetStatus = await getBetStatus(
+      handleOfBetContainer,
+      tableItemRequest,
+    )
+    if (!rawBetStatus) return
+    const parsed = parseBetStatus(rawBetStatus)
+    return parsed
+  }
 
   const addRound = async (e: any) => {
     e.preventDefault()
