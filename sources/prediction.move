@@ -1,6 +1,7 @@
 module betos::prediction {
     use std::signer;
     use std::vector;
+    use std::error;
 
     use aptos_std::table::{Self, Table};
     use aptos_std::event;
@@ -25,6 +26,7 @@ module betos::prediction {
 
     const ENO_OWNER: u64 = 0;
     const EBET_TOO_EARLY: u64 = 1;
+    const EBET_DUPLICATE: u64 = 2;
 
     struct Events has key {
         update_price_events: event::EventHandle<UpdatePriceEvent>,
@@ -211,6 +213,10 @@ module betos::prediction {
             move_to<BetContainer>(better, BetContainer { bets: table::new<u64, Bet>(), epochs: vector::empty<u64>() });
         };
 
+        // On duplicate, add only if is_bull is the same.
+        let bet_container = borrow_global_mut<BetContainer>(better_address);
+        assert!(!table::contains(&bet_container.bets, epoch), error::invalid_argument(EBET_DUPLICATE));
+
         // 2. Transfer aptos
         let round_container = borrow_global_mut<RoundContainer>(@betos);
         let resource_signer = account::create_signer_with_capability(&round_container.signer_cap);
@@ -219,7 +225,6 @@ module betos::prediction {
         coin::deposit(resource_signer_address, in_coin);
 
         // 3. Insert BetInfo into table
-        let bet_container = borrow_global_mut<BetContainer>(better_address);
         table::add(&mut bet_container.bets, epoch, Bet { epoch, amount, is_bull, claimed: false } );
         vector::push_back(&mut bet_container.epochs, epoch);
 
