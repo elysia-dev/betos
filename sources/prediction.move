@@ -27,6 +27,9 @@ module betos::prediction {
     const ENO_OWNER: u64 = 0;
     const EBET_TOO_EARLY: u64 = 1;
     const EBET_DUPLICATE: u64 = 2;
+    const EGENESIS_START: u64 = 3;
+    const EGENESIS_LOCK: u64 = 4;
+    const EEXECUTE_ROUNDS_LENGTH: u64 = 5;
 
     struct Events has key {
         update_price_events: event::EventHandle<UpdatePriceEvent>,
@@ -132,6 +135,8 @@ module betos::prediction {
         let round_container = borrow_global_mut<RoundContainer>(@betos);
         // let resource_signer = account::create_signer_with_capability(&round_container.signer_cap);
 
+        assert!(vector::length(&round_container.rounds) >= 2, EEXECUTE_ROUNDS_LENGTH);
+
         // 1. get oracle price
         let price = update_and_fetch_price(account, pyth_update_data);
         let price_positive = i64::get_magnitude_if_positive(&price::get_price(&price)); // This will fail if the price is negative
@@ -160,6 +165,8 @@ module betos::prediction {
         let round_container = borrow_global_mut<RoundContainer>(@betos);
         // let resource_signer = account::create_signer_with_capability(&round_container.signer_cap);
 
+        assert!(vector::length(&round_container.rounds) == 1, EGENESIS_LOCK);
+
         // 1. get oracle price
         let price = update_and_fetch_price(account, pyth_update_data);
         let price_positive = i64::get_magnitude_if_positive(&price::get_price(&price)); // This will fail if the price is negative
@@ -184,6 +191,8 @@ module betos::prediction {
         assert!(account_address == @admin, ENO_OWNER);
         let round_container = borrow_global_mut<RoundContainer>(@betos);
         // let resource_signer = account::create_signer_with_capability(&round_container.signer_cap);
+
+        assert!(vector::length(&round_container.rounds) == 0, EGENESIS_START);
 
         let current_epoch = round_container.current_epoch;
 
