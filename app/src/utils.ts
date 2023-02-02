@@ -49,8 +49,11 @@ export const parseRound = (rawRound: RawRound): Round => {
   const lockPrice = aptToNumber(Number(lock_price))
   const epoch = Number(_epoch)
 
-  const resultStatus: Round["resultStatus"] =
-    closePrice > lockPrice ? "up" : "down"
+  const resultStatus: Round["resultStatus"] = !closePrice
+    ? "none"
+    : closePrice > lockPrice
+    ? "up"
+    : "down"
   return {
     bearAmount,
     bullAmount,

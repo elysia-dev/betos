@@ -321,7 +321,8 @@ const Home: React.FC = () => {
       })
       const result = await Promise.all(promises)
       const compacted = compact(result)
-      setMyEpochs(compacted)
+      const sliced = compacted.slice(-5)
+      setMyEpochs(sliced)
     }
     fetch()
   }, [epochsOfBetContainer, handleOfBetContainer])
