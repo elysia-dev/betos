@@ -21,7 +21,7 @@ module betos::prediction {
     // #[test_only]
     // use std::debug;
 
-        // For the entire list of price_ids head to https://pyth.network/developers/price-feed-ids/#pyth-cross-chain-testnet
+    // For the entire list of price_ids head to https://pyth.network/developers/price-feed-ids/#pyth-cross-chain-testnet
     const APTOS_USD_PRICE_FEED_IDENTIFIER : vector<u8> = x"44a93dddd8effa54ea51076c4e851b6cbbfd938e82eb90197de38fe8876bb66e";
 
     const ENO_OWNER: u64 = 0;
@@ -30,6 +30,7 @@ module betos::prediction {
     const EGENESIS_START: u64 = 3;
     const EGENESIS_LOCK: u64 = 4;
     const EEXECUTE_ROUNDS_LENGTH: u64 = 5;
+    const EBET_NOT_CURRENT_EPOCH: u64 = 6;
 
     struct Events has key {
         update_price_events: event::EventHandle<UpdatePriceEvent>,
