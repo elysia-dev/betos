@@ -85,25 +85,25 @@ const parseRound = (rawRound: RawRound, considerDigit?: boolean) => {
     total_amount,
   } = rawRound
 
-  const bearAmount = Number(bear_amount)
-  const bullAmount = Number(bull_amount)
-  const totalAmount = Number(total_amount)
-  const closePrice = Number(close_price)
+  const bearAmount = aptToNumber(Number(bear_amount))
+  const bullAmount = aptToNumber(Number(bull_amount))
+  const totalAmount = aptToNumber(Number(total_amount))
+  const closePrice = aptToNumber(Number(close_price))
   const closeTimestamp = new Date(close_timestamp)
   const lockTimestamp = new Date(lock_timestamp)
   const startTimestamp = new Date(start_timestamp)
-  const lockPrice = Number(lock_price)
+  const lockPrice = aptToNumber(Number(lock_price))
   const epoch = Number(_epoch)
   if (considerDigit) {
     return {
-      bearAmount: aptToNumber(bearAmount),
-      bullAmount: aptToNumber(bullAmount),
-      totalAmount: aptToNumber(totalAmount),
-      closePrice: aptToNumber(closePrice),
+      bearAmount,
+      bullAmount,
+      totalAmount,
+      closePrice,
       closeTimestamp,
       lockTimestamp,
       startTimestamp,
-      lockPrice: aptToNumber(lockPrice),
+      lockPrice,
       epoch,
     }
   }
@@ -127,7 +127,7 @@ type RawBetStatus = {
   epoch: string
   is_bull: boolean
 }
-type BetStatus = {
+export type BetStatus = {
   amount: number
   claimed: boolean
   epoch: number
@@ -196,14 +196,24 @@ const Home: React.FC = () => {
   const USE_DUMMY = false
   const rounds = USE_DUMMY ? dummyRounds : fetchedRounds
 
-  const sliced = rounds.slice(-5)
+  const sliced = rounds.slice(-4)
 
   // const parsed = sliced.map(parseRound)
   const parsed = sliced.map((s) => parseRound(s, true))
-  // console.log("fetchedRounds", fetchedRounds)
-  // console.log("dummyRounds", dummyRounds)
-  // 가장 최근 6개를 읽어온다.
-  console.log("parsed", parsed)
+
+  // set dummy rounds
+  const dummyRound = {
+    bearAmount: 0,
+    bullAmount: 0,
+    totalAmount: 0,
+    closePrice: 0,
+    closeTimestamp: new Date(),
+    lockTimestamp: new Date(),
+    startTimestamp: new Date(),
+    lockPrice: 0,
+    epoch: 100,
+  }
+  const totalRounds = [...parsed, { ...dummyRound }]
 
   useEffect(() => {
     // round 정보 fetch
@@ -236,7 +246,7 @@ const Home: React.FC = () => {
       // value_type: "0x3::token::TokenData",
       key_type: `u64`,
       value_type: `${BETOS_ADDRESS}::${MODULE_NAME}::Bet`,
-      key: "1",
+      key: currentEpoch,
     }
 
     const rawBetStatus = await client.getTableItem(
@@ -290,14 +300,24 @@ const Home: React.FC = () => {
         </ClaimButton>
       </Descriptions>
       <Board>
-        {parsed.map((round, index) => {
+        {totalRounds.map((round, index) => {
+          const { epoch } = round
+          const diff = Number(currentEpoch) - epoch
+
           const roundState: RoundState = (function () {
-            if (index < 2) return "expired"
-            if (index === 2) return "live"
-            if (index === 3) return "next"
+            if (diff > 1) return "expired"
+            if (diff === 1) return "live"
+            if (diff === 0) return "next"
             return "later"
           })()
-          return <Card key={index} round={round} roundState={roundState} />
+          return (
+            <Card
+              key={index}
+              round={round}
+              roundState={roundState}
+              betStatusOnCurrentRound={betStatusOnCurrentRound}
+            />
+          )
         })}
       </Board>
     </Wrapper>

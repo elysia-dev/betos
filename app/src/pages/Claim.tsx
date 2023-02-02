@@ -1,5 +1,6 @@
 import React from "react"
-const Claim = (props: any) => {
-  return <div>Claim</div>
-}
-export default Claim
+import Claim from "../components/Claim"
+
+const ClaimPage = (props: any) => <Claim />
+
+export default ClaimPage
