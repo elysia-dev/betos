@@ -9,9 +9,10 @@ export default async function handler(
   if (request.method === "POST") {
     try {
       const { authorization } = request.headers
+      const { betosAddress, action } = request.body
 
       if (authorization === `Bearer ${process.env.APTOS_KEY}`) {
-        const result = await run(request.body.action)
+        const result = await run(betosAddress, action)
         console.log(result)
 
         response.status(200).json({
@@ -29,12 +30,8 @@ export default async function handler(
   }
 }
 
-async function run(action: string) {
+async function run(betosAddress: string, action: string) {
   const endpoint = "https://fullnode.testnet.aptoslabs.com"
-  const BETOS_ADDRESS = process.env.BETOS_ADDRESS
-  if (process.env.BETOS_ADDRESS === undefined) {
-    throw new Error(`BETOS_ADDRESS environment variable should be set.`)
-  }
   const connection = new AptosPriceServiceConnection(
     "https://xc-testnet.pyth.network",
   ) // See Price Service endpoints section below for other endpoints
@@ -66,21 +63,21 @@ async function run(action: string) {
 
   if (action === "start") {
     entryFunction = TxnBuilderTypes.EntryFunction.natural(
-      `${BETOS_ADDRESS}::prediction`,
+      `${betosAddress}::prediction`,
       "genesis_start_round",
       [],
       [],
     )
   } else if (action === "lock") {
     entryFunction = TxnBuilderTypes.EntryFunction.natural(
-      `${BETOS_ADDRESS}::prediction`,
+      `${betosAddress}::prediction`,
       "genesis_lock_round",
       [],
       [AptosPriceServiceConnection.serializeUpdateData(priceUpdateData)],
     )
   } else if (action === "execute") {
     entryFunction = TxnBuilderTypes.EntryFunction.natural(
-      `${BETOS_ADDRESS}::prediction`,
+      `${betosAddress}::prediction`,
       "execute_round",
       [],
       [AptosPriceServiceConnection.serializeUpdateData(priceUpdateData)],

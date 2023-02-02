@@ -15,4 +15,8 @@ jobs:
         run: |
           curl --request POST \
           --url 'https://betos.vercel.app/api/handler' \
-          --header 'Authorization: Bearer ${{ secrets.APTOS_KEY }}'
+          --header 'Authorization: Bearer ${{ secrets.APTOS_KEY }}' \
+          --data-raw '{
+            "action": "execute",
+            "betosAddress": ${{ vars.BETOS_ADDRESS }}
+          }'
