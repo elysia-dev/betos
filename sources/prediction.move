@@ -92,7 +92,7 @@ module betos::prediction {
 
     public fun start_round(rounds: &mut vector<Round>, epoch: u64) {
         // TODO: change to 300
-        let interval_seconds = 100;
+        let interval_seconds = 300;
         let start_timestamp = timestamp::now_seconds();
         let lock_timestamp = start_timestamp + interval_seconds;
         let close_timestamp = start_timestamp + 2 * interval_seconds;
