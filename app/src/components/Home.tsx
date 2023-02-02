@@ -96,6 +96,7 @@ const Home: React.FC = () => {
   const {
     token: { colorPrimaryText },
   } = theme.useToken()
+  const [showDevInfo, setShowDevInfo] = useState(false)
   const [myEpochs, setMyEpochs] = useState<BetStatus[]>([])
   const { client, account, address } = useAptosModule()
 
@@ -395,10 +396,15 @@ const Home: React.FC = () => {
   })()
   return (
     <Wrapper>
-      <div>My address: {address}</div>
-      <div>Bettos address: {BETOS_ADDRESS}</div>
-      <div>currentEpoch: {currentEpoch}</div>
-      <Button onClick={addRound}>Add round</Button>
+      <Button onClick={() => setShowDevInfo((s) => !s)}>Show dev info</Button>
+      {showDevInfo && (
+        <div>
+          <div>My address: {address}</div>
+          <div>Bettos address: {BETOS_ADDRESS}</div>
+          <div>currentEpoch: {currentEpoch}</div>
+          <Button onClick={addRound}>Add round</Button>
+        </div>
+      )}
       <Descriptions>
         <h2>Your Total Prize</h2>
         <h4 style={{ color: colorPrimaryText }}>+ {claimableAmounts} APTs</h4>
