@@ -4,15 +4,21 @@ import { Price, PriceFeed } from "@pythnetwork/pyth-common-js"
 import { AptosPriceServiceConnection } from "@pythnetwork/pyth-aptos-js"
 import React, { useEffect, useMemo, useState } from "react"
 import styled from "styled-components"
-import { Button, theme, Typography } from "antd"
+import { Button, theme } from "antd"
 import PartyImage from "../assets/party.png"
 import { Types, AptosClient, getAddressFromAccountOrAddress } from "aptos"
-import useAptosModule, { MODULE_NAME, BETOS_ADDRESS } from "../useAptosModule"
+import useAptosModule from "../useAptosModule"
 import Card from "./Card"
 import dummyRounds, { genDummy } from "./dummyRounds"
-import { aptToNumber, parseBetStatus } from "../utils"
-import { BetStatus } from "../types"
-import Compact from "antd/es/space/Compact"
+import { aptToNumber, parseBetStatus, parseRound } from "../utils"
+import { BetStatus, RawRound, Round } from "../types"
+import {
+  APT_USD_TESTNET_PRICE_ID,
+  BETOS_ADDRESS,
+  MODULE_NAME,
+  TESTNET_PRICE_SERVICE,
+} from "../constants"
+import { forEachChild } from "typescript"
 
 const Wrapper = styled.div`
   div.my-bets {
@@ -75,84 +81,16 @@ const Board = styled.div`
   justify-content: center;
 `
 
-export type RawRound = {
-  epoch: string
-  bear_amount: string
-  bull_amount: string
-  close_price: string
-  close_timestamp: string
-  lock_price: string
-  lock_timestamp: string
-  start_timestamp: string
-  total_amount: string
-}
-
-export type Round = {
-  bearAmount: number
-  bullAmount: number
-  totalAmount: number
-  closePrice: number
-  closeTimestamp: Date
-  lockTimestamp: Date
-  startTimestamp: Date
-  lockPrice: number
-  epoch: number
-  resultStatus: "bull" | "bear" | "none"
-}
 // expired: 결과까지 끝남
 // live: bet은 끝났고 5분뒤에 결과 나옴, 오직1개
 // next: 현재 bet 가능, 오직1개
 // later: 아직 bet불가 (다음 라운드)
 export type RoundState = "expired" | "live" | "next" | "later"
-const parseRound = (rawRound: RawRound): Round => {
-  const {
-    bear_amount,
-    bull_amount,
-    close_price,
-    close_timestamp,
-    lock_price,
-    lock_timestamp,
-    epoch: _epoch,
-    start_timestamp,
-    total_amount,
-  } = rawRound
 
-  const bearAmount = aptToNumber(Number(bear_amount))
-  const bullAmount = aptToNumber(Number(bull_amount))
-  const totalAmount = aptToNumber(Number(total_amount))
-  const closePrice = aptToNumber(Number(close_price))
-  const closeTimestamp = new Date(close_timestamp)
-  const lockTimestamp = new Date(lock_timestamp)
-  const startTimestamp = new Date(start_timestamp)
-  const lockPrice = aptToNumber(Number(lock_price))
-  const epoch = Number(_epoch)
-
-  const resultStatus: Round["resultStatus"] =
-    closePrice > lockPrice ? "bull" : "bear"
-  return {
-    bearAmount,
-    bullAmount,
-    totalAmount,
-    closePrice,
-    closeTimestamp,
-    lockTimestamp,
-    startTimestamp,
-    lockPrice,
-    epoch,
-    resultStatus,
-  }
-}
-
-type Epoch = {
-  amount: number
-  claimed: boolean
-  epoch: number
-  isBull: boolean
-}
-const APT_USD_TESTNET_PRICE_ID =
-  "44a93dddd8effa54ea51076c4e851b6cbbfd938e82eb90197de38fe8876bb66e"
-const TESTNET_PRICE_SERVICE = "https://xc-testnet.pyth.network"
 const testnetConnection = new AptosPriceServiceConnection(TESTNET_PRICE_SERVICE)
+
+const RESOURCE_KEY_BET = `${BETOS_ADDRESS}::${MODULE_NAME}::BetContainer`
+const RESOURCE_KEY_ROUND = `${BETOS_ADDRESS}::${MODULE_NAME}::RoundContainer`
 
 const Home: React.FC = () => {
   const {
@@ -160,8 +98,7 @@ const Home: React.FC = () => {
   } = theme.useToken()
   const [myEpochs, setMyEpochs] = useState<BetStatus[]>([])
   console.log("myEpochs", myEpochs)
-  const { client, account, address, modules } = useAptosModule()
-  const hasModule = modules.some((m) => m.abi?.name === MODULE_NAME)
+  const { client, account, address } = useAptosModule()
 
   const [betosResources, setBetosResources] = React.useState<
     Types.MoveResource[]
@@ -179,7 +116,6 @@ const Home: React.FC = () => {
   console.log("accountResources", accountResources)
   // console.log("betStatusOnCurrentRound", betStatusOnCurrentRound)
 
-  const RESOURCE_KEY_BET = `${BETOS_ADDRESS}::${MODULE_NAME}::BetContainer`
   const handleOfBetContainer = useMemo(() => {
     const accountResource = accountResources.find(
       (r) => r?.type === RESOURCE_KEY_BET,
@@ -195,14 +131,14 @@ const Home: React.FC = () => {
     const accountResource = accountResources.find(
       (r) => r?.type === RESOURCE_KEY_BET,
     )
+    console.log("RESOURCE_KEY_BET", RESOURCE_KEY_BET)
+    console.log("accountResource", accountResource)
     const data = accountResource?.data as
       | { bets: { handle: string }; epochs: string[] }
       | undefined
 
     return map(data?.epochs, (e) => Number(e))
   }, [accountResources])
-
-  const RESOURCE_KEY_ROUND = `${BETOS_ADDRESS}::${MODULE_NAME}::RoundContainer`
 
   const betosResource = betosResources.find(
     (r) => r?.type === RESOURCE_KEY_ROUND,
@@ -215,7 +151,7 @@ const Home: React.FC = () => {
   const dummyRounds = genDummy()
 
   const USE_DUMMY = false
-  const rounds = fetchedRounds
+  const rounds = USE_DUMMY ? dummyRounds : fetchedRounds
   console.log("rounds", rounds)
 
   const parsedRounds = rounds.map(parseRound)
@@ -394,6 +330,37 @@ const Home: React.FC = () => {
     console.log("response", response)
   }
 
+  const checkRoundClosed = (round: Round) => !!round.closePrice
+
+  const claimableAmounts = (function () {
+    if (!myEpochs) {
+      return 0
+    }
+
+    const sum = myEpochs.reduce((acc, myEpoch) => {
+      const { amount, claimed, epoch, isBull } = myEpoch
+      if (epoch === Number(currentEpoch)) return acc
+      const round = getRoundByEpoch(epoch)
+      if (!round) {
+        console.warn("No round founded, epoch num: ", epoch)
+        return acc
+      }
+      const resultStatus = round.resultStatus
+      const isClosedRound = checkRoundClosed(round)
+      // round not closed
+      if (!isClosedRound || claimed) {
+        return acc
+      }
+
+      const isWin = (function () {
+        if (resultStatus === "bull") return isBull
+        if (resultStatus === "bear") return !isBull
+        else return false
+      })()
+      return isWin ? acc + amount : acc
+    }, 0)
+    return sum
+  })()
   return (
     <Wrapper>
       <div>currentEpoch: {currentEpoch}</div>
@@ -413,13 +380,16 @@ const Home: React.FC = () => {
             const { amount, claimed, epoch, isBull } = myEpoch
             if (epoch === Number(currentEpoch)) return null
             const round = getRoundByEpoch(epoch)
-            const resultStatus = round?.resultStatus
+            if (!round) return null
+            const { resultStatus } = round
+            const isClosedRound = checkRoundClosed(round)
             const isWin = (function () {
               if (resultStatus === "bull") return isBull
               if (resultStatus === "bear") return !isBull
               else return false
             })()
             console.log("isWin", isWin)
+            const state = !isClosedRound ? "PENDING" : isWin ? "WIN" : "FAIL"
             return (
               <div className="epoch-summary" key={`${index}+${epoch}`}>
                 <div>Number: {epoch}</div>
@@ -427,11 +397,12 @@ const Home: React.FC = () => {
                 <div>
                   You betted: {isBull ? "Up" : "Down"} with {amount} APT
                 </div>
-                <div>Round closed with: {resultStatus} </div>
-                <div>State: {isWin ? "WIN" : "FAIL"}</div>
+                {isClosedRound && <div>Round closed with: {resultStatus} </div>}
+                <div>State: {state}</div>
               </div>
             )
           })}
+          You can claim {claimableAmounts} APT
         </div>
       </div>
       <Board>

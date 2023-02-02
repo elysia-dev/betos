@@ -2,16 +2,15 @@ import styled from "styled-components"
 import { Button, InputNumber, theme, Typography } from "antd"
 import { gray } from "@ant-design/colors"
 import { useEffect, useState } from "react"
-import { Round, RoundState } from "./Home"
+import { RoundState } from "./Home"
 
 import { formatNumber, numberToApt } from "../utils"
-import useAptosModule, { BETOS_ADDRESS, MODULE_NAME } from "../useAptosModule"
-import { AptosClient } from "aptos"
-import { BetStatus } from "../types"
+import useAptosModule from "../useAptosModule"
+import { BetStatus, Round } from "../types"
+import { BETOS_ADDRESS, MODULE_NAME } from "../constants"
+
 const SECONDARY_COLOR = "#F57272"
 const PRIMARY_TEXT_COLOR = "#61c19b"
-
-const OCTA = 8
 
 const CardWrapper = styled.div<{ mainColor: string }>`
   width: 302px;
@@ -115,7 +114,6 @@ type CardProps = {
   currentPrice: number
 }
 
-const client = new AptosClient("https://fullnode.testnet.aptoslabs.com/v1")
 const Card: React.FC<CardProps> = ({
   round,
   roundState,

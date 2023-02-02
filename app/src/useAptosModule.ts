@@ -1,12 +1,9 @@
 import React from "react"
 import { Types, AptosClient } from "aptos"
+import { BETOS_ADDRESS, CLIENT_ENDPOINT, MODULE_NAME } from "./constants"
 
 // Create an AptosClient to interact with devnet.
-const client = new AptosClient("https://fullnode.testnet.aptoslabs.com/v1")
-export const BETOS_ADDRESS =
-  "0x152abeda39dc9bbf3f52803ddb72ba0a4fae21aae48b25a706512d54ff00b924"
-
-export const MODULE_NAME = "prediction"
+const client = new AptosClient(CLIENT_ENDPOINT)
 
 const useAptosModule = () => {
   // Retrieve aptos.account on initial render and store it.

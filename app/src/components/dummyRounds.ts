@@ -1,3 +1,5 @@
+import { RawRound } from "../types"
+
 export const genDummy = () => {
   const result = []
   for (let i = 0; i < 10; i++) {
@@ -29,7 +31,7 @@ export const genDummy = () => {
   }
   return result
 }
-const dummyRounds = [
+const dummyRounds: RawRound[] = [
   {
     epoch: "10",
     bear_amount: "156",

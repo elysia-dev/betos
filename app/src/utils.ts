@@ -1,4 +1,4 @@
-import { BetStatus, RawBetStatus } from "./types"
+import { BetStatus, RawBetStatus, Round, RawRound } from "./types"
 
 export const OCTA = 8
 export const formatNumber = (n: number, digit = 2) => {
@@ -23,4 +23,43 @@ export const parseBetStatus = (rawBetStatus: RawBetStatus): BetStatus => {
     isBull: is_bull,
   }
   return parsed
+}
+
+export const parseRound = (rawRound: RawRound): Round => {
+  const {
+    bear_amount,
+    bull_amount,
+    close_price,
+    close_timestamp,
+    lock_price,
+    lock_timestamp,
+    epoch: _epoch,
+    start_timestamp,
+    total_amount,
+  } = rawRound
+
+  const bearAmount = aptToNumber(Number(bear_amount))
+  const bullAmount = aptToNumber(Number(bull_amount))
+  const totalAmount = aptToNumber(Number(total_amount))
+  const closePrice = aptToNumber(Number(close_price))
+  const closeTimestamp = new Date(close_timestamp)
+  const lockTimestamp = new Date(lock_timestamp)
+  const startTimestamp = new Date(start_timestamp)
+  const lockPrice = aptToNumber(Number(lock_price))
+  const epoch = Number(_epoch)
+
+  const resultStatus: Round["resultStatus"] =
+    closePrice > lockPrice ? "bull" : "bear"
+  return {
+    bearAmount,
+    bullAmount,
+    totalAmount,
+    closePrice,
+    closeTimestamp,
+    lockTimestamp,
+    startTimestamp,
+    lockPrice,
+    epoch,
+    resultStatus,
+  }
 }
