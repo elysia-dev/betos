@@ -7,6 +7,8 @@ import useAptosModule, { MODULE_NAME, BETOS_ADDRESS } from "../useAptosModule"
 import Card from "./Card"
 import dummyRounds, { genDummy } from "./dummyRounds"
 import { aptToNumber } from "../utils"
+import { Price, PriceFeed } from "@pythnetwork/pyth-common-js"
+import { AptosPriceServiceConnection } from "@pythnetwork/pyth-aptos-js"
 
 const Wrapper = styled.div``
 
@@ -145,6 +147,11 @@ const parseBetStatus = (rawBetStatus: RawBetStatus): BetStatus => {
   return parsed
 }
 
+const APT_USD_TESTNET_PRICE_ID =
+  "44a93dddd8effa54ea51076c4e851b6cbbfd938e82eb90197de38fe8876bb66e"
+const TESTNET_PRICE_SERVICE = "https://xc-testnet.pyth.network"
+const testnetConnection = new AptosPriceServiceConnection(TESTNET_PRICE_SERVICE)
+
 const Home: React.FC = () => {
   const {
     token: { colorPrimaryText },
@@ -214,6 +221,19 @@ const Home: React.FC = () => {
     epoch: 100,
   }
   const totalRounds = [...parsed, { ...dummyRound }]
+
+  const [pythOffChainPrice, setPythOffChainPrice] = React.useState<
+    Price | undefined
+  >(undefined)
+
+  // Subscribe to offchain prices. These are the prices that a typical frontend will want to show.
+  testnetConnection.subscribePriceFeedUpdates(
+    [APT_USD_TESTNET_PRICE_ID],
+    (priceFeed: PriceFeed) => {
+      const price = priceFeed.getPriceUnchecked() // Fine to use unchecked (not checking for staleness) because this must be a recent price given that it comes from a websocket subscription.
+      setPythOffChainPrice(price)
+    },
+  )
 
   useEffect(() => {
     // round 정보 fetch
@@ -316,6 +336,7 @@ const Home: React.FC = () => {
               round={round}
               roundState={roundState}
               betStatusOnCurrentRound={betStatusOnCurrentRound}
+              currentPrice={pythOffChainPrice?.getPriceAsNumberUnchecked() || 0}
             />
           )
         })}

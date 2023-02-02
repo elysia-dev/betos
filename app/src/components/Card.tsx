@@ -110,6 +110,7 @@ type CardProps = {
   round: Round
   roundState: RoundState
   betStatusOnCurrentRound?: BetStatus
+  currentPrice: number
 }
 
 const client = new AptosClient("https://fullnode.testnet.aptoslabs.com/v1")
@@ -117,6 +118,7 @@ const Card: React.FC<CardProps> = ({
   round,
   roundState,
   betStatusOnCurrentRound,
+  currentPrice,
 }) => {
   const {
     token: { colorPrimaryText, colorTextSecondary, colorPrimary },
@@ -243,9 +245,7 @@ const Card: React.FC<CardProps> = ({
           <div>
             <div>Current Price</div>
             <div className="summary">
-              {/* TODO: 오라클로부터 받아오기 */}
-              {/* <div className="price">${formatNumber(closePrice, 4)}</div> */}
-              <div className="price">???</div>
+              <div className="price">${formatNumber(currentPrice, 4)}</div>
             </div>
           </div>
         )}
