@@ -29,3 +29,6 @@ jobs:
         run: |
           cd scripts
           yarn run ts-node execute.ts --action execute
+        env:
+          BETOS_ADDRESS: ${{ vars.BETOS_ADDRESS }}
+          APTOS_KEY: ${{ secrets.APTOS_KEY }}
