@@ -25,5 +25,7 @@ jobs:
           cd scripts
           yarn install
 
-      - name: Test unit
-        run: yarn run ts-node execute.ts --action execute
+      - name: Execute round
+        run: |
+          cd scripts
+          yarn run ts-node execute.ts --action execute
