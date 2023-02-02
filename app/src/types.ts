@@ -34,5 +34,5 @@ export type Round = {
   startTimestamp: number
   lockPrice: number
   epoch: number
-  resultStatus: "bull" | "bear" | "none"
+  resultStatus: "up" | "down" | "none"
 }

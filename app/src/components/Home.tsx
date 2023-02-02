@@ -4,7 +4,7 @@ import { Price, PriceFeed } from "@pythnetwork/pyth-common-js"
 import { AptosPriceServiceConnection } from "@pythnetwork/pyth-aptos-js"
 import React, { useEffect, useMemo, useState } from "react"
 import styled from "styled-components"
-import { Button, theme } from "antd"
+import { Button, theme, Card as AntdCard } from "antd"
 import PartyImage from "../assets/party.png"
 import { Types, AptosClient, getAddressFromAccountOrAddress } from "aptos"
 import useAptosModule from "../useAptosModule"
@@ -17,6 +17,8 @@ import {
   APT_USD_TESTNET_PRICE_ID,
   BETOS_ADDRESS,
   MODULE_NAME,
+  PRIMARY_TEXT_COLOR,
+  SECONDARY_COLOR,
   TESTNET_PRICE_SERVICE,
 } from "../constants"
 
@@ -43,6 +45,15 @@ const Wrapper = styled.div`
       display: flex;
       flex-direction: column;
       font-size: 20px;
+    }
+  }
+`
+
+const CardWrapper = styled(AntdCard)`
+  div.row {
+    display: flex;
+    div:last-child {
+      margin-left: 5px;
     }
   }
 `
@@ -379,8 +390,8 @@ const Home: React.FC = () => {
       }
 
       const isWin = (function () {
-        if (resultStatus === "bull") return isBull
-        if (resultStatus === "bear") return !isBull
+        if (resultStatus === "up") return isBull
+        if (resultStatus === "down") return !isBull
         else return false
       })()
 
@@ -418,27 +429,88 @@ const Home: React.FC = () => {
         <div className="details">
           {myEpochs.map((myEpoch, index) => {
             const { amount, claimed, epoch, isBull } = myEpoch
-            if (epoch === Number(currentEpoch)) return null
+            const isCurrentEpoch = epoch === Number(currentEpoch)
             const round = getRoundByEpoch(epoch)
             if (!round) return null
             const { resultStatus } = round
             const isClosedRound = checkRoundClosed(round)
             const isWin = (function () {
-              if (resultStatus === "bull") return isBull
-              if (resultStatus === "bear") return !isBull
+              if (resultStatus === "up") return isBull
+              if (resultStatus === "down") return !isBull
               else return false
             })()
-            const state = !isClosedRound ? "PENDING" : isWin ? "WIN" : "FAIL"
+            const state =
+              !isClosedRound || isCurrentEpoch
+                ? "PENDING"
+                : isWin
+                ? "WIN"
+                : "FAIL"
             return (
-              <div className="epoch-summary" key={`${index}+${epoch}`}>
-                <div>#{epoch}</div>
-                <div>Claimed: {claimed ? "true" : "false"}</div>
-                <div>
-                  Bet on: {isBull ? "Up" : "Down"} with {amount} APT
+              // <div className="epoch-summary" key={`${index}+${epoch}`}>
+              //   <div>#{epoch}</div>
+              //   <div>Claimed: {claimed ? "true" : "false"}</div>
+              //   <div>
+              //     Bet on: {isBull ? "Up" : "Down"} with {amount} APT
+              //   </div>
+              //   {isClosedRound && <div>Round closed with: {resultStatus} </div>}
+              //   <div>isWin?: {state}</div>
+              // </div>
+
+              <CardWrapper
+                key={index}
+                title={`#${epoch}`}
+                extra={
+                  <div>
+                    <div
+                      style={{
+                        color: isWin ? "green" : "red",
+                      }}>
+                      {state}
+                    </div>
+                    <div
+                      style={{
+                        color: claimed ? "green" : "red",
+                      }}>
+                      {claimed ? "CLAIMED" : "UN-CLAIMED"}
+                    </div>
+                  </div>
+                }
+                style={{ width: 300 }}>
+                <div className="row">
+                  <div className="first">Bet</div>
+                  <div>
+                    <span
+                      style={{
+                        color: isBull ? PRIMARY_TEXT_COLOR : SECONDARY_COLOR,
+                        margin: "0 2px",
+                      }}>
+                      {isBull ? "UP" : "DOWN"}
+                    </span>
+                    with
+                    <span
+                      style={{
+                        color: PRIMARY_TEXT_COLOR,
+                        margin: "0 2px",
+                      }}>
+                      {amount}
+                    </span>
+                    APT
+                  </div>
                 </div>
-                {isClosedRound && <div>Round closed with: {resultStatus} </div>}
-                <div>isWin?: {state}</div>
-              </div>
+
+                <div className="row">
+                  <div className="first">Round Closed With </div>
+                  <div
+                    style={{
+                      color:
+                        resultStatus === "up"
+                          ? PRIMARY_TEXT_COLOR
+                          : SECONDARY_COLOR,
+                    }}>
+                    {resultStatus.toUpperCase()}
+                  </div>
+                </div>
+              </CardWrapper>
             )
           })}
         </div>

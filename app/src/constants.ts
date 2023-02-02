@@ -7,3 +7,6 @@ export const BETOS_ADDRESS =
 
 export const CLIENT_ENDPOINT = "https://fullnode.testnet.aptoslabs.com/v1"
 export const MODULE_NAME = "prediction"
+
+export const SECONDARY_COLOR = "#F57272"
+export const PRIMARY_TEXT_COLOR = "#61c19b"

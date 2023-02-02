@@ -7,14 +7,20 @@ import { RoundState } from "./Home"
 import { formatNumber, numberToApt } from "../utils"
 import useAptosModule from "../useAptosModule"
 import { BetStatus, Round } from "../types"
-import { BETOS_ADDRESS, MODULE_NAME } from "../constants"
+import {
+  BETOS_ADDRESS,
+  MODULE_NAME,
+  PRIMARY_TEXT_COLOR,
+  SECONDARY_COLOR,
+} from "../constants"
 import useCounter from "../hooks/useMinusCounter"
 import MinusTimer from "./MinusTimer"
 
-const SECONDARY_COLOR = "#F57272"
-const PRIMARY_TEXT_COLOR = "#61c19b"
-
-const CardWrapper = styled.div<{ mainColor: string; isNext?: boolean }>`
+const CardWrapper = styled.div<{
+  mainColor: string
+  isNext?: boolean
+  isDisabled?: boolean
+}>`
   width: 320px;
   height: 240px;
 
@@ -27,6 +33,12 @@ const CardWrapper = styled.div<{ mainColor: string; isNext?: boolean }>`
     `
     box-shadow: 0 0px 30px white;
   transform: translateY(0);`}
+  ${(props) =>
+    props.isDisabled &&
+    `
+    pointer-events: none;
+
+`}
 `
 const Header = styled.div<{ mainColor: string }>`
   background: ${(props) => props.mainColor};
@@ -183,6 +195,8 @@ const Card: React.FC<CardProps> = ({
   betStatusOnCurrentRound,
   currentPrice,
 }) => {
+  const [isDisabled, setIsDisabled] = useState(false)
+  const setDisabled = () => setIsDisabled(true)
   const {
     token: { colorPrimaryText, colorTextSecondary, colorPrimary },
   } = theme.useToken()
@@ -306,7 +320,7 @@ const Card: React.FC<CardProps> = ({
   const currentTimestamp = Math.floor(Date.now())
 
   return (
-    <CardWrapper mainColor={mainColor} isNext={isNext}>
+    <CardWrapper mainColor={mainColor} isNext={isNext} isDisabled={isDisabled}>
       <Header mainColor={mainColor}>
         <span className="number">{`#${epoch}`}</span>
         <span className="status">{title}</span>
@@ -323,6 +337,7 @@ const Card: React.FC<CardProps> = ({
               </div>
             </div>
             <MinusTimer
+              setDisabled={setDisabled}
               start={round.closeTimestamp - currentTimestamp}
               showProgress
             />
@@ -351,9 +366,6 @@ const Card: React.FC<CardProps> = ({
                       <span>{amount}</span>APT
                     </span>
                     <span> on {isBull ? "Up" : "Down"}</span>
-                  </div>
-                  <div>
-                    <span>{claimed ? "claimed" : "un-claimed"}</span>
                   </div>
                 </div>
               ) : betMode !== null ? (

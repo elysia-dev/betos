@@ -50,7 +50,7 @@ export const parseRound = (rawRound: RawRound): Round => {
   const epoch = Number(_epoch)
 
   const resultStatus: Round["resultStatus"] =
-    closePrice > lockPrice ? "bull" : "bear"
+    closePrice > lockPrice ? "up" : "down"
   return {
     bearAmount,
     bullAmount,

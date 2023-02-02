@@ -1,10 +1,11 @@
 import { Progress } from "antd"
-import React from "react"
+import React, { useEffect } from "react"
 import styled from "styled-components"
 import useMinusCounter from "../hooks/useMinusCounter"
 type Props = {
   start: number
   showProgress?: boolean
+  setDisabled?: () => void
 }
 
 const Wrapper = styled.div`
@@ -15,7 +16,7 @@ const Wrapper = styled.div`
 // minus counter
 // all miliseconds
 const FIVE_MINUTES = 5 * 60 * 1000
-const MinusTimer: React.FC<Props> = ({ start, showProgress }) => {
+const MinusTimer: React.FC<Props> = ({ start, showProgress, setDisabled }) => {
   if (start < 0) {
     return <Wrapper className="timer">finished</Wrapper>
   }
@@ -23,6 +24,12 @@ const MinusTimer: React.FC<Props> = ({ start, showProgress }) => {
   const time = useMinusCounter(start)
   const detail = getTimeDetail(time)
   const progress = (time / FIVE_MINUTES) * 100
+
+  useEffect(() => {
+    if (time < 0 && setDisabled) {
+      setDisabled()
+    }
+  }, [time])
 
   return (
     <Wrapper className="timer">
