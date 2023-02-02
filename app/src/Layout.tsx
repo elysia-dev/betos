@@ -12,7 +12,7 @@ const LayoutComponent: React.FC<Props> = ({ children }) => {
     token: { colorBgContainer, colorPrimaryBg },
   } = theme.useToken()
 
-  const naviagation = ["Home", "Dashboard", "Claim"]
+  const naviagation = ["Home", "Claim"]
 
   return (
     <Layout className="layout" style={{ overflow: "hidden" }}>

@@ -1,57 +1,20 @@
-import React from "react"
-import styled from "styled-components"
-import { Button, Space, Table, Tag } from "antd"
-import type { ColumnsType } from "antd/es/table"
-type Props = any
-const Wrapper = styled.div``
-const Header = styled.div``
-const Record = styled.div``
+import { compact, map } from "lodash"
 
-const Claim: React.FC<Props> = () => {
-  return (
-    // <Wrapper>
-    //   <Header>
-    //     <h4>Your Total Prize</h4>
-    //     <h4>_0.00013 APT</h4>
-    //     <Button>Claim</Button>
-    //   </Header>
-    //   <Record>
-    //     <h4>MyRecord</h4>
-    //     <Table>
-    //       <th>
-    //         <div>Round</div>
-    //         <div>Result</div>
-    //         <div>Up&Down</div>
-    //         <div>Position</div>
-    //         <div>Reward</div>
-    //         <div>Total</div>
-    //       </th>
-    //     </Table>
-    //   </Record>
-    //   <Record>
-    //     <h4>Round Record</h4>
-    //     <Table>
-    //       <th>
-    //         <div>Round</div>
-    //         <div>Result</div>
-    //         <div>Up&Down</div>
-    //         <div>Position</div>
-    //         <div>Reward</div>
-    //         <div>Total</div>
-    //       </th>
-    //     </Table>
-    //   </Record>
-    // </Wrapper>
-    <Table columns={columns} dataSource={data} />
-  )
-}
-export default Claim
+import React, { useEffect, useMemo, useState } from "react"
+import { Table, Tag } from "antd"
+import { Types } from "aptos"
+import useAptosModule from "../useAptosModule"
+import { formatNumber, parseBetStatus, parseRound } from "../utils"
+import { BetStatus, RawRound, Round } from "../types"
+import { BETOS_ADDRESS, MODULE_NAME } from "../constants"
+
+import type { ColumnsType } from "antd/es/table"
 
 interface DataType {
   key: string
-  round: number
-  isWin: boolean
-  updown: boolean
+  round: string
+  state: string
+  isBull: boolean
   position: number
   reward: number
   total: number
@@ -65,18 +28,18 @@ const columns: ColumnsType<DataType> = [
   },
   {
     title: "Result",
-    dataIndex: "isWin",
-    key: "isWin",
+    dataIndex: "state",
+    key: "state",
   },
   {
     title: "Up&down",
-    key: "updown",
+    key: "isBull",
     dataIndex: "upddown",
-    render: (_, { updown }) => {
-      const color = updown ? "red" : "blue"
+    render: (_, { isBull }) => {
+      const color = isBull ? "red" : "blue"
       return (
         <Tag color={color} key={color}>
-          {updown ? "Up" : "Down"}
+          {isBull ? "Up" : "Down"}
         </Tag>
       )
     },
@@ -98,23 +61,213 @@ const columns: ColumnsType<DataType> = [
   },
 ]
 
-const data: DataType[] = [
-  {
-    key: "1",
-    round: 12345,
-    isWin: true,
-    updown: true,
-    position: 0.0001,
-    reward: 0.0005,
-    total: 0.123123,
-  },
-  {
-    key: "2",
-    round: 124235,
-    isWin: false,
-    updown: true,
-    position: 0.0001,
-    reward: 0.0005,
-    total: 0.123123,
-  },
-]
+// expired: 결과까지 끝남
+// live: bet은 끝났고 5분뒤에 결과 나옴, 오직1개
+// next: 현재 bet 가능, 오직1개
+// later: 아직 bet불가 (다음 라운드)
+
+const RESOURCE_KEY_BET = `${BETOS_ADDRESS}::${MODULE_NAME}::BetContainer`
+const RESOURCE_KEY_ROUND = `${BETOS_ADDRESS}::${MODULE_NAME}::RoundContainer`
+
+const Claim: React.FC = () => {
+  const [myEpochs, setMyEpochs] = useState<BetStatus[]>([])
+  const { client, account, address } = useAptosModule()
+
+  const [betosResources, setBetosResources] = React.useState<
+    Types.MoveResource[]
+  >([])
+
+  // 연결된 지갑에 있는 리소스
+  const [accountResources, setAccountResources] = React.useState<
+    Types.MoveResource[]
+  >([])
+
+  const handleOfBetContainer = useMemo(() => {
+    const accountResource = accountResources.find(
+      (r) => r?.type === RESOURCE_KEY_BET,
+    )
+    const data = accountResource?.data as
+      | { bets: { handle: string }; epochs: number[] }
+      | undefined
+
+    return data?.bets?.handle
+  }, [accountResources])
+
+  const epochsOfBetContainer = useMemo(() => {
+    const accountResource = accountResources.find(
+      (r) => r?.type === RESOURCE_KEY_BET,
+    )
+    const data = accountResource?.data as
+      | { bets: { handle: string }; epochs: string[] }
+      | undefined
+
+    return map(data?.epochs, (e) => Number(e))
+  }, [accountResources])
+
+  const betosResource = betosResources.find(
+    (r) => r?.type === RESOURCE_KEY_ROUND,
+  )
+  const data = betosResource?.data as
+    | { rounds: RawRound[]; current_epoch: string }
+    | undefined
+  const fetchedRounds = data?.rounds || []
+  const currentEpoch = Number(data?.current_epoch) || 0
+
+  const rounds = fetchedRounds
+
+  const parsedRounds = rounds.map(parseRound)
+
+  // TODO: key를 epoch로 하게 해서 개선하기, 이거대로면 매번 round 배열을 순회해야함
+  const getRoundByEpoch = (epoch: number) => {
+    return parsedRounds.find((r) => r.epoch === epoch)
+  }
+
+  useEffect(() => {
+    // round 정보 fetch
+    const fetchBetosResources = async () => {
+      const betosResources = await client.getAccountResources(BETOS_ADDRESS)
+      setBetosResources(betosResources)
+    }
+    fetchBetosResources()
+  }, [])
+
+  useEffect(() => {
+    if (!address) return
+
+    // 연결된 account의 bet 정보 fetch
+    const fetchAccountResources = async () => {
+      const accountResources = await client.getAccountResources(address)
+      setAccountResources(accountResources)
+    }
+
+    fetchAccountResources()
+  }, [address])
+
+  const getTableItemRequest = (key: number) => {
+    if (!key) return null
+    return {
+      key_type: `u64`,
+      value_type: `${BETOS_ADDRESS}::${MODULE_NAME}::Bet`,
+      key: String(key),
+    }
+  }
+
+  const getBetStatus = async (
+    handleOfBetContainer: any,
+    tableItemRequest: any,
+  ) => {
+    if (!handleOfBetContainer) return
+    if (!tableItemRequest) return
+    const rawBetStatus = await client.getTableItem(
+      handleOfBetContainer,
+      tableItemRequest,
+    )
+    return rawBetStatus
+  }
+  const checkRoundClosed = (round: Round) => !!round.closePrice
+
+  useEffect(() => {
+    const fetch = async () => {
+      if (!epochsOfBetContainer) return
+      if (!handleOfBetContainer) return
+
+      const promises = epochsOfBetContainer.map(async (epoch) => {
+        const tableItemRequest = getTableItemRequest(epoch)
+        const rawBetStatus = await getBetStatus(
+          handleOfBetContainer,
+          tableItemRequest,
+        )
+        if (!rawBetStatus) return
+        const parsed = parseBetStatus(rawBetStatus)
+        return parsed
+      })
+      const result = await Promise.all(promises)
+      const compacted = compact(result)
+      setMyEpochs(compacted)
+    }
+    fetch()
+  }, [epochsOfBetContainer, handleOfBetContainer])
+
+  const tableData = useMemo(() => {
+    return myEpochs.map((myEpoch, index) => {
+      const { amount, claimed, epoch, isBull } = myEpoch
+      const isCurrentEpoch = epoch === Number(currentEpoch)
+      const round = getRoundByEpoch(epoch)
+      if (!round) {
+        return null
+      }
+      const { resultStatus, totalAmount, bullAmount, bearAmount } = round || {}
+      const isClosedRound = checkRoundClosed(round)
+      const isWin = (function () {
+        if (resultStatus === "up") return isBull
+        if (resultStatus === "down") return !isBull
+        else return false
+      })()
+      const state: string =
+        !isClosedRound || isCurrentEpoch ? "PENDING" : isWin ? "WIN" : "FAIL"
+
+      const reward = (function () {
+        if (!isWin) return 0
+        const payout = totalAmount / (isBull ? bullAmount : bearAmount)
+        return payout * amount
+      })()
+
+      return {
+        key: String(index),
+        round: `#${epoch}`,
+        state,
+        isBull,
+        position: amount,
+        reward,
+        total: totalAmount,
+      }
+    })
+  }, [myEpochs])
+  const compactedTableData: DataType[] = compact(tableData)
+
+  const claimableAmounts = (function () {
+    if (!myEpochs) {
+      return 0
+    }
+
+    const sum = myEpochs.reduce((acc, myEpoch) => {
+      const { amount, claimed, epoch, isBull } = myEpoch
+      if (epoch === Number(currentEpoch)) return acc
+      const round = getRoundByEpoch(epoch)
+      if (!round) {
+        console.warn("No round founded, epoch num: ", epoch)
+        return acc
+      }
+      const { resultStatus, totalAmount, bullAmount, bearAmount } = round
+
+      const isClosedRound = checkRoundClosed(round)
+      // round not closed
+      if (!isClosedRound || claimed) {
+        return acc
+      }
+
+      const isWin = (function () {
+        if (resultStatus === "up") return isBull
+        if (resultStatus === "down") return !isBull
+        else return false
+      })()
+
+      const reward = (function () {
+        if (!isWin) return 0
+        const payout = totalAmount / (isBull ? bullAmount : bearAmount)
+        return payout * amount
+      })()
+
+      return isWin ? acc + reward : acc
+    }, 0)
+    return formatNumber(sum, 10)
+  })()
+  return (
+    <div>
+      <Table columns={columns} dataSource={compactedTableData} />
+      <div>TotalSum : {claimableAmounts} APT</div>
+    </div>
+  )
+}
+
+export default Claim
