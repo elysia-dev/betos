@@ -4,7 +4,7 @@ import { Types, AptosClient } from "aptos"
 // Create an AptosClient to interact with devnet.
 const client = new AptosClient("https://fullnode.testnet.aptoslabs.com/v1")
 export const BETOS_ADDRESS =
-  "0x82391e84c5696d3499605464599c904e669bd2739a9f7d658b6e2a24b791738b"
+  "0x79cba52f30287ceb64f06d7d611c7aa2a9fa727f28c2ece2c3df38ce03a57a1d"
 
 export const MODULE_NAME = "prediction"
 

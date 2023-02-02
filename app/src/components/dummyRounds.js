@@ -1,7 +1,7 @@
 export const genDummy = () => {
   const result = []
   for (let i = 0; i < 10; i++) {
-    const number = String(i + 100)
+    const epoch = String(i + 100)
     const bear_amount = String(Math.floor(Math.random() * 1000))
     const bull_amount = String(Math.floor(Math.random() * 1000))
     const total_amount = String(Number(bear_amount) + Number(bull_amount))
@@ -15,7 +15,7 @@ export const genDummy = () => {
     const close_timestamp = "1675238664"
 
     const round = {
-      number,
+      epoch,
       bear_amount,
       bull_amount,
       total_amount,
@@ -31,7 +31,7 @@ export const genDummy = () => {
 }
 const dummyRounds = [
   {
-    number: "10",
+    epoch: "10",
     bear_amount: "156",
     bull_amount: "350",
     close_price: "307.12",
@@ -42,7 +42,7 @@ const dummyRounds = [
     total_amount: "850",
   },
   {
-    number: "11",
+    epoch: "11",
     bear_amount: "500",
     bull_amount: "900",
     total_amount: "850",
@@ -53,7 +53,7 @@ const dummyRounds = [
     start_timestamp: "1675238664",
   },
   {
-    number: "12",
+    epoch: "12",
     bear_amount: "500",
     bull_amount: "699",
     total_amount: "850",
@@ -64,7 +64,7 @@ const dummyRounds = [
     start_timestamp: "1675238664",
   },
   {
-    number: "13",
+    epoch: "13",
     bear_amount: "1590",
     bull_amount: "3500",
     total_amount: "850",
@@ -75,7 +75,7 @@ const dummyRounds = [
     start_timestamp: "1675238664",
   },
   {
-    number: "14",
+    epoch: "14",
     bear_amount: "114",
     bull_amount: "350",
     total_amount: "850",
@@ -86,7 +86,7 @@ const dummyRounds = [
     start_timestamp: "1675238664",
   },
   {
-    number: "15",
+    epoch: "15",
     bear_amount: "500",
     bull_amount: "350",
     total_amount: "850",

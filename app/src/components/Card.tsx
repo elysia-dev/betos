@@ -3,10 +3,13 @@ import { Button, InputNumber, theme, Typography } from "antd"
 import { gray } from "@ant-design/colors"
 import { useEffect, useState } from "react"
 import { Round, RoundState } from "./Home"
-import { formatNumber } from "../utils"
-import { BETOS_ADDRESS, MODULE_NAME } from "../useAptosModule"
+import { formatNumber, numberToApt } from "../utils"
+import useAptosModule, { BETOS_ADDRESS, MODULE_NAME } from "../useAptosModule"
+import { AptosClient } from "aptos"
 const SECONDARY_COLOR = "#F57272"
 const PRIMARY_TEXT_COLOR = "#61c19b"
+
+const OCTA = 8
 
 const CardWrapper = styled.div<{ mainColor: string }>`
   width: 302px;
@@ -104,14 +107,18 @@ type CardProps = {
   roundState: RoundState
 }
 
+const client = new AptosClient("https://fullnode.testnet.aptoslabs.com/v1")
 const Card: React.FC<CardProps> = ({ round, roundState }) => {
   const {
     token: { colorPrimaryText, colorTextSecondary, colorPrimary },
   } = theme.useToken()
+  const { client, account, address, modules } = useAptosModule()
   const [betMode, setBetMode] = useState<"up" | "down" | null>(null)
   const [betAmount, setBetAmount] = useState(0)
+  const DEFUALT_BET_AMOUNT = 5
+
   useEffect(() => {
-    setBetAmount(10)
+    setBetAmount(DEFUALT_BET_AMOUNT)
   }, [betMode])
 
   const {
@@ -123,7 +130,7 @@ const Card: React.FC<CardProps> = ({ round, roundState }) => {
     lockTimestamp,
     startTimestamp,
     lockPrice,
-    number,
+    epoch,
   } = round
 
   const priceDiff = (function () {
@@ -136,8 +143,14 @@ const Card: React.FC<CardProps> = ({ round, roundState }) => {
     }
   })()
 
-  const bullPayout = formatNumber(totalAmount / bullAmount)
-  const bearPayout = formatNumber(totalAmount / bearAmount)
+  const getPayout = (totalAmount: number, amount: number) => {
+    if (totalAmount === 0) return 0
+    if (amount === 0) return 0
+    return formatNumber(totalAmount / amount)
+  }
+
+  const bullPayout = getPayout(totalAmount, bullAmount)
+  const bearPayout = getPayout(totalAmount, bearAmount)
 
   const priceDiffDescription = priceDiff.isBullish
     ? `+${priceDiff.diff}`
@@ -184,25 +197,35 @@ const Card: React.FC<CardProps> = ({ round, roundState }) => {
     return "Later"
   })()
 
+  // 베팅!
   const handleClickBet = async () => {
-    const ok = window.confirm(`You betted ${betAmount}APT. Is it okay?`)
+    const ok = window.confirm(
+      `You betted ${betAmount}APT on ${betMode?.toLocaleUpperCase()}. Is it okay?`,
+    )
     if (!ok) return
 
+    const isBull = betMode === "up"
+
+    const aptAmount = numberToApt(betAmount)
+
+    // TODO: change
+    const epoch = 1
     const transaction = {
       type: "entry_function_payload",
       function: `${BETOS_ADDRESS}::${MODULE_NAME}::bet`,
-      arguments: [number, betAmount],
+      arguments: [epoch, aptAmount, isBull],
       type_arguments: [],
     }
     console.log("transaction", transaction)
 
-    await window.aptos.signAndSubmitTransaction(transaction)
+    const response = await window.aptos.signAndSubmitTransaction(transaction)
+    console.log("response", response)
   }
 
   return (
     <CardWrapper mainColor={mainColor}>
       <Header mainColor={mainColor}>
-        <span className="number">{`#${number}`}</span>
+        <span className="number">{`#${epoch}`}</span>
         <span className="status">{title}</span>
       </Header>
       <Contents mainColor={mainColor}>
@@ -210,8 +233,8 @@ const Card: React.FC<CardProps> = ({ round, roundState }) => {
           <div>
             <div>Closed Price</div>
             <div className="summary">
-              <div>{formatNumber(closePrice, 4)}</div>
-              <div>{priceDiffDescription}</div>
+              <div>${formatNumber(closePrice, 4)}</div>
+              <div>${priceDiffDescription}</div>
             </div>
           </div>
         )}
@@ -259,13 +282,13 @@ const Card: React.FC<CardProps> = ({ round, roundState }) => {
               onChange={(value) => {
                 value && setBetAmount(value)
               }}
-              step={5}
+              step={1}
               value={betAmount}
-              min={5}
+              min={1}
               max={100}
               addonBefore="+"
               addonAfter="APT"
-              defaultValue={10}
+              defaultValue={DEFUALT_BET_AMOUNT}
             />
           </div>
         ) : isLater ? (
@@ -282,11 +305,11 @@ const Card: React.FC<CardProps> = ({ round, roundState }) => {
 
             <div className="row">
               <span className="title">Locked Price:</span>
-              <span className="content">$ 290.2768</span>
+              <span className="content">${lockPrice}</span>
             </div>
             <div className="row">
               <span className="title">Prize Pool:</span>
-              <span className="content">17.0423 BNB</span>
+              <span className="content">${totalAmount}</span>
             </div>
           </div>
         )}
