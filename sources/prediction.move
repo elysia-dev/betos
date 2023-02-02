@@ -216,6 +216,9 @@ module betos::prediction {
         // let now = timestamp::now_seconds();
         // assert!(start_timestamp <= now, EBET_TOO_EARLY);
 
+        let round_container = borrow_global_mut<RoundContainer>(@betos);
+        assert!(epoch == round_container.current_epoch, error::invalid_argument(EBET_NOT_CURRENT_EPOCH));
+
         let better_address = signer::address_of(better);
         // 1. Create if not exists
         if (!exists<BetContainer>(better_address)) {
@@ -227,7 +230,6 @@ module betos::prediction {
         assert!(!table::contains(&bet_container.bets, epoch), error::invalid_argument(EBET_DUPLICATE));
 
         // 2. Transfer aptos
-        let round_container = borrow_global_mut<RoundContainer>(@betos);
         let resource_signer = account::create_signer_with_capability(&round_container.signer_cap);
         let resource_signer_address = signer::address_of(&resource_signer);
         let in_coin = coin::withdraw<AptosCoin>(better, amount);
