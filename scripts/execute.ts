@@ -1,5 +1,5 @@
 import { AptosPriceServiceConnection } from "@pythnetwork/pyth-aptos-js";
-import { AptosAccount, AptosClient, TxnBuilderTypes } from "aptos";
+import { AptosAccount, AptosClient, TxnBuilderTypes, BCS } from "aptos";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
@@ -40,7 +40,11 @@ async function main() {
   if (process.env.APTOS_KEY === undefined) {
     throw new Error(`APTOS_KEY environment variable should be set.`);
   }
-  const sender = new AptosAccount(Buffer.from(process.env.APTOS_KEY, "hex"));
+  const sender = AptosAccount.fromAptosAccountObject({
+    privateKeyHex: process.env.APTOS_KEY,
+    // publicKeyHex: "",
+    // address: "",
+  });
 
   let entryFunction;
   if (argv.action === "start") {
