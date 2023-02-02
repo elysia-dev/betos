@@ -8,27 +8,11 @@ on:
     - cron: "*/1 * * * *"
 
 jobs:
-  deploy:
-    runs-on: ubuntu-22.04
-
+  cron:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@master
-
-      - name: Set up Node.js
-        uses: actions/setup-node@master
-        with:
-          node-version: 16.x
-
-      - name: Install dependencies
+      - name: Call our API route
         run: |
-          cd scripts
-          yarn install
-
-      - name: Execute round
-        run: |
-          cd scripts
-          yarn run ts-node execute.ts --action execute
-        env:
-          BETOS_ADDRESS: ${{ vars.BETOS_ADDRESS }}
-          APTOS_KEY: ${{ secrets.APTOS_KEY }}
+          curl --request POST \
+          --url 'https://betos.vercel.app/api/handler' \
+          --header 'Authorization: Bearer ${{ secrets.APTOS_KEY }}'

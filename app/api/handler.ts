@@ -6,6 +6,30 @@ export default async function handler(
   request: VercelRequest,
   response: VercelResponse,
 ) {
+  if (request.method === "POST") {
+    try {
+      const { authorization } = request.headers
+
+      if (authorization === `Bearer ${process.env.APTOS_KEY}`) {
+        const result = await run(request.body.action)
+        console.log(result)
+
+        response.status(200).json({
+          result: result,
+        })
+      } else {
+        response.status(401).json({ success: false })
+      }
+    } catch (err) {
+      response.status(500).json({ statusCode: 500, message: err.message })
+    }
+  } else {
+    response.setHeader("Allow", "POST")
+    response.status(405).end("Method Not Allowed")
+  }
+}
+
+async function run(action: string) {
   const endpoint = "https://fullnode.testnet.aptoslabs.com"
   const BETOS_ADDRESS = process.env.BETOS_ADDRESS
   if (process.env.BETOS_ADDRESS === undefined) {
@@ -38,24 +62,23 @@ export default async function handler(
     // address: "",
   })
 
-  const { body } = request
   let entryFunction
 
-  if (body.action === "start") {
+  if (action === "start") {
     entryFunction = TxnBuilderTypes.EntryFunction.natural(
       `${BETOS_ADDRESS}::prediction`,
       "genesis_start_round",
       [],
       [],
     )
-  } else if (body.action === "lock") {
+  } else if (action === "lock") {
     entryFunction = TxnBuilderTypes.EntryFunction.natural(
       `${BETOS_ADDRESS}::prediction`,
       "genesis_lock_round",
       [],
       [AptosPriceServiceConnection.serializeUpdateData(priceUpdateData)],
     )
-  } else if (body.action === "execute") {
+  } else if (action === "execute") {
     entryFunction = TxnBuilderTypes.EntryFunction.natural(
       `${BETOS_ADDRESS}::prediction`,
       "execute_round",
@@ -70,12 +93,4 @@ export default async function handler(
     sender,
     new TxnBuilderTypes.TransactionPayloadEntryFunction(entryFunction),
   )
-
-  console.log(result)
-
-  response.status(200).json({
-    body: request.body,
-    query: request.query,
-    cookies: request.cookies,
-  })
 }
