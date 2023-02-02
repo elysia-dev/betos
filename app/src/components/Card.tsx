@@ -203,6 +203,7 @@ const Card: React.FC<CardProps> = ({
   betStatusOnCurrentRound,
   currentPrice = 0,
 }) => {
+  console.log("currentPrice", currentPrice)
   const [isDisabled, setIsDisabled] = useState(false)
   const setDisabled = () => setIsDisabled(true)
   const {

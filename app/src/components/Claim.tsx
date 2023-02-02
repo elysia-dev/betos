@@ -6,7 +6,12 @@ import { Types } from "aptos"
 import useAptosModule from "../useAptosModule"
 import { formatNumber, parseBetStatus, parseRound } from "../utils"
 import { BetStatus, RawRound, Round } from "../types"
-import { BETOS_ADDRESS, MODULE_NAME } from "../constants"
+import {
+  BETOS_ADDRESS,
+  MODULE_NAME,
+  PRIMARY_TEXT_COLOR,
+  SECONDARY_COLOR,
+} from "../constants"
 
 import type { ColumnsType } from "antd/es/table"
 
@@ -17,6 +22,7 @@ interface DataType {
   isBull: boolean
   position: number
   reward: number
+  claimed: boolean
   total: number
 }
 
@@ -36,7 +42,7 @@ const columns: ColumnsType<DataType> = [
     key: "isBull",
     dataIndex: "upddown",
     render: (_, { isBull }) => {
-      const color = isBull ? "red" : "blue"
+      const color = isBull ? PRIMARY_TEXT_COLOR : SECONDARY_COLOR
       return (
         <Tag color={color} key={color}>
           {isBull ? "Up" : "Down"}
@@ -53,6 +59,19 @@ const columns: ColumnsType<DataType> = [
     title: "Reward",
     dataIndex: "reward",
     key: "reward",
+  },
+  {
+    title: "Claimed",
+    dataIndex: "claimed",
+    key: "claimed",
+    render: (_, { claimed }) => {
+      const color = claimed ? "red" : "blue"
+      return (
+        <Tag color={color} key={color}>
+          {claimed ? "CLAIMED" : "UN-CLAIMED"}
+        </Tag>
+      )
+    },
   },
   {
     title: "Total",
@@ -219,6 +238,7 @@ const Claim: React.FC = () => {
         isBull,
         position: amount,
         reward,
+        claimed,
         total: totalAmount,
       }
     })
