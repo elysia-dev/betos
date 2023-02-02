@@ -19,7 +19,6 @@ import {
   MODULE_NAME,
   TESTNET_PRICE_SERVICE,
 } from "../constants"
-import { forEachChild } from "typescript"
 
 const Wrapper = styled.div`
   div.my-bets {
@@ -77,7 +76,7 @@ const ClaimButton = styled(Button)`
 `
 
 const Board = styled.div`
-  margin-top: 250px;
+  margin-top: 150px;
   display: flex;
   justify-content: center;
 `
@@ -157,9 +156,9 @@ const Home: React.FC = () => {
   const USE_DUMMY = false
   const dummyRounds = genDummy()
   const rounds = USE_DUMMY ? dummyRounds2 : fetchedRounds
-  console.log("rounds", rounds)
 
   const parsedRounds = rounds.map(parseRound)
+  console.log("parsedRounds", parsedRounds)
 
   // TODO: key를 epoch로 하게 해서 개선하기, 이거대로면 매번 round 배열을 순회해야함
   const getRoundByEpoch = (epoch: number) => {
@@ -174,14 +173,52 @@ const Home: React.FC = () => {
     bullAmount: 0,
     totalAmount: 0,
     closePrice: 0,
-    closeTimestamp: new Date(),
-    lockTimestamp: new Date(),
-    startTimestamp: new Date(),
+    closeTimestamp: 0,
+    lockTimestamp: 0,
+    startTimestamp: 0,
     lockPrice: 0,
     epoch: 100,
     resultStatus: "none",
   }
-  const totalRounds = [...sliced, { ...dummyRound }]
+
+  const currentRound = useMemo(
+    () => getRoundByEpoch(currentEpoch),
+    [currentEpoch],
+  )
+  const laterRounds: Round[] = (function () {
+    const fiveMinutes = 5 * 60 * 1000
+    const tenMinutes = 2 * 5 * 60 * 1000
+
+    const nextRound: Round = {
+      bearAmount: 0,
+      bullAmount: 0,
+      totalAmount: 0,
+      closePrice: 0,
+      closeTimestamp: (currentRound?.closeTimestamp || 0) + fiveMinutes,
+      lockTimestamp: (currentRound?.lockTimestamp || 0) + fiveMinutes,
+      startTimestamp: (currentRound?.startTimestamp || 0) + fiveMinutes,
+      lockPrice: 0,
+      epoch: 10000,
+      resultStatus: "none",
+    }
+
+    const theNextRound: Round = {
+      bearAmount: 0,
+      bullAmount: 0,
+      totalAmount: 0,
+      closePrice: 0,
+      closeTimestamp: (currentRound?.closeTimestamp || 0) + tenMinutes,
+      lockTimestamp: (currentRound?.lockTimestamp || 0) + tenMinutes,
+      startTimestamp: (currentRound?.startTimestamp || 0) + tenMinutes,
+      lockPrice: 0,
+      epoch: 10000,
+      resultStatus: "none",
+    }
+    return [{ ...nextRound }, { ...theNextRound }]
+  })()
+  console.log("laterRounds", laterRounds)
+
+  const totalRounds = [...sliced, ...laterRounds]
 
   const [pythOffChainPrice, setPythOffChainPrice] = React.useState<
     Price | undefined

@@ -38,13 +38,14 @@ export const parseRound = (rawRound: RawRound): Round => {
     total_amount,
   } = rawRound
 
+  const timestampRatio = 1000
   const bearAmount = aptToNumber(Number(bear_amount))
   const bullAmount = aptToNumber(Number(bull_amount))
   const totalAmount = aptToNumber(Number(total_amount))
   const closePrice = aptToNumber(Number(close_price))
-  const closeTimestamp = new Date(close_timestamp)
-  const lockTimestamp = new Date(lock_timestamp)
-  const startTimestamp = new Date(start_timestamp)
+  const closeTimestamp = Number(close_timestamp) * timestampRatio
+  const lockTimestamp = Number(lock_timestamp) * timestampRatio
+  const startTimestamp = Number(start_timestamp) * timestampRatio
   const lockPrice = aptToNumber(Number(lock_price))
   const epoch = Number(_epoch)
 

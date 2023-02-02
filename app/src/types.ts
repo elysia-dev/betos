@@ -29,9 +29,9 @@ export type Round = {
   bullAmount: number
   totalAmount: number
   closePrice: number
-  closeTimestamp: Date
-  lockTimestamp: Date
-  startTimestamp: Date
+  closeTimestamp: number
+  lockTimestamp: number
+  startTimestamp: number
   lockPrice: number
   epoch: number
   resultStatus: "bull" | "bear" | "none"

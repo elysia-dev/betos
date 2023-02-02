@@ -8,18 +8,25 @@ import { formatNumber, numberToApt } from "../utils"
 import useAptosModule from "../useAptosModule"
 import { BetStatus, Round } from "../types"
 import { BETOS_ADDRESS, MODULE_NAME } from "../constants"
+import useCounter from "../hooks/useMinusCounter"
+import MinusTimer from "./MinusTimer"
 
 const SECONDARY_COLOR = "#F57272"
 const PRIMARY_TEXT_COLOR = "#61c19b"
 
-const CardWrapper = styled.div<{ mainColor: string }>`
-  width: 302px;
-  height: 216px;
+const CardWrapper = styled.div<{ mainColor: string; isNext?: boolean }>`
+  width: 320px;
+  height: 240px;
 
   background: rgba(20, 22, 21, 0.8);
   border-radius: 15px;
   margin: 10px;
   border: 1px solid ${(props) => props.mainColor};
+  ${(props) =>
+    props.isNext &&
+    `
+    box-shadow: 0 0px 30px white;
+  transform: translateY(0);`}
 `
 const Header = styled.div<{ mainColor: string }>`
   background: ${(props) => props.mainColor};
@@ -40,52 +47,62 @@ const Header = styled.div<{ mainColor: string }>`
 const Contents = styled.div<{ mainColor: string }>`
   padding: 20px;
   div.summary {
-    color: ${(props) => props.mainColor};
-    font-size: 25px;
     display: flex;
-    height: 35px;
-    align-items: center;
+    flex-direction: row;
     justify-content: space-between;
 
-    > div.price {
-      color: ${(props) => props.mainColor};
-      height: 100%;
-
+    color: ${(props) => props.mainColor};
+    > div {
+      font-size: 25px;
       display: flex;
+      height: 35px;
       align-items: center;
-    }
+      justify-content: space-between;
 
-    > div.diff {
-      height: 100%;
-      width: 90px;
-      background-color: ${(props) => props.mainColor};
-      border-radius: 8px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-weight: 700;
-      color: black;
-      font-size: 15px;
-    }
+      > div.price {
+        color: ${(props) => props.mainColor};
+        height: 100%;
 
-    button {
-      width: 40%;
-      &.up {
-        color: ${PRIMARY_TEXT_COLOR};
-        &:hover {
-          border-color: ${PRIMARY_TEXT_COLOR};
+        display: flex;
+        align-items: center;
+      }
+
+      > div.diff {
+        height: 100%;
+        width: 90px;
+        background-color: ${(props) => props.mainColor};
+        border-radius: 8px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: 700;
+        color: black;
+        font-size: 15px;
+      }
+
+      button {
+        width: 40%;
+        &.up {
+          color: ${PRIMARY_TEXT_COLOR};
+          &:hover {
+            border-color: ${PRIMARY_TEXT_COLOR};
+          }
+        }
+        &.down {
+          color: ${SECONDARY_COLOR};
+          &:hover {
+            border-color: ${SECONDARY_COLOR};
+          }
         }
       }
-      &.down {
-        color: ${SECONDARY_COLOR};
-        &:hover {
-          border-color: ${SECONDARY_COLOR};
-        }
+      .bet-state {
+        font-size: 15px;
+        color: white;
       }
     }
-    .bet-state {
-      font-size: 15px;
-      color: white;
+
+    &.next {
+      display: block;
     }
   }
   div.detail {
@@ -96,6 +113,10 @@ const Contents = styled.div<{ mainColor: string }>`
     div.row {
       display: flex;
       justify-content: space-between;
+    }
+
+    div.timer {
+      font-size: 20px;
     }
   }
 
@@ -134,16 +155,27 @@ function useInterval(callback: any, delay: any) {
   }, [delay])
 }
 
-const Counter = () => {
-  const [count, setCount] = useState(0)
+// const MinusTimer = ({ round }: { round: Round }) => {
+//   const [count, setCount] = useState(0)
+//   const {
+//     bearAmount,
+//     bullAmount,
+//     closePrice,
+//     closeTimestamp,
+//     lockPrice,
+//     lockTimestamp,
+//     resultStatus,
+//     startTimestamp,
+//     totalAmount,
+//   } = round
 
-  useInterval(() => {
-    // Your custom logic here
-    setCount(count + 1)
-  }, 1000)
+//   useInterval(() => {
+//     // Your custom logic here
+//     setCount(count + 1)
+//   }, 1000)
 
-  return <h1>{count}</h1>
-}
+//   return <h1>{count}</h1>
+// }
 
 const Card: React.FC<CardProps> = ({
   round,
@@ -270,8 +302,11 @@ const Card: React.FC<CardProps> = ({
     }
   }
 
+  // milliseconds
+  const currentTimestamp = Math.floor(Date.now())
+
   return (
-    <CardWrapper mainColor={mainColor}>
+    <CardWrapper mainColor={mainColor} isNext={isNext}>
       <Header mainColor={mainColor}>
         <span className="number">{`#${epoch}`}</span>
         <span className="status">{title}</span>
@@ -285,9 +320,12 @@ const Card: React.FC<CardProps> = ({
                 {currentPrice
                   ? `$${formatNumber(currentPrice, 4)}`
                   : "Loading..."}
-                <Counter />
               </div>
             </div>
+            <MinusTimer
+              start={round.closeTimestamp - currentTimestamp}
+              showProgress
+            />
           </div>
         )}
         {isExpired && (
@@ -300,58 +338,62 @@ const Card: React.FC<CardProps> = ({
           </div>
         )}
         {isNext && (
-          <div className="summary">
-            {betStatusOnCurrentRound ? (
-              <div className="bet-state">
-                <div>You betted on this stage</div>
-                <div
-                  style={{
-                    color: isBull ? colorPrimaryText : SECONDARY_COLOR,
-                  }}>
-                  <span>
-                    <span>{amount}</span>APT
-                  </span>
-                  <span> on {isBull ? "Up" : "Down"}</span>
+          <div className="summary next">
+            <div>
+              {betStatusOnCurrentRound ? (
+                <div className="bet-state">
+                  <div>You betted on this stage</div>
+                  <div
+                    style={{
+                      color: isBull ? colorPrimaryText : SECONDARY_COLOR,
+                    }}>
+                    <span>
+                      <span>{amount}</span>APT
+                    </span>
+                    <span> on {isBull ? "Up" : "Down"}</span>
+                  </div>
+                  <div>
+                    <span>{claimed ? "claimed" : "un-claimed"}</span>
+                  </div>
                 </div>
-                <div>
-                  <span>{claimed ? "claimed" : "un-claimed"}</span>
-                </div>
-              </div>
-            ) : betMode !== null ? (
-              <>
-                <Button
-                  onClick={() => {
-                    handleClickBet()
-                  }}>
-                  Confirm
-                </Button>
-                <Button
-                  onClick={() => {
-                    setBetMode(null)
-                  }}>
-                  Cancel
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  className="up"
-                  onClick={() => {
-                    setBetMode("up")
-                  }}>
-                  Up
-                </Button>
-                <Button
-                  className="down"
-                  onClick={() => {
-                    setBetMode("down")
-                  }}>
-                  Down
-                </Button>
-              </>
-            )}
+              ) : betMode !== null ? (
+                <>
+                  <Button
+                    onClick={() => {
+                      handleClickBet()
+                    }}>
+                    Confirm
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setBetMode(null)
+                    }}>
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    className="up"
+                    onClick={() => {
+                      setBetMode("up")
+                    }}>
+                    Up
+                  </Button>
+                  <Button
+                    className="down"
+                    onClick={() => {
+                      setBetMode("down")
+                    }}>
+                    Down
+                  </Button>
+                </>
+              )}
+            </div>
+            <MinusTimer start={round.lockTimestamp - currentTimestamp} />
           </div>
         )}
+
         {betMode !== null ? (
           <div className="bet_input">
             <h4>Bet to {betMode}</h4>
@@ -369,12 +411,12 @@ const Card: React.FC<CardProps> = ({
             />
           </div>
         ) : isLater ? (
-          <div className="detail">
+          <div className="detail later">
             <p>Next round will start</p>
-            <p>~03:54</p>
+            <MinusTimer start={round.startTimestamp - currentTimestamp} />
           </div>
         ) : isNext ? (
-          <div className="detail">
+          <div className="detail next">
             <div className="row">
               <span className="title">UP / Down Payout:</span>
               <span className="content">{`${bullPayout}x / ${bearPayout}x`}</span>
@@ -385,7 +427,7 @@ const Card: React.FC<CardProps> = ({
             </div>
           </div>
         ) : (
-          <div className="detail">
+          <div className="detail expired live">
             <div className="row">
               <span className="title">UP / Down Payout:</span>
               <span className="content">{`${bullPayout}x / ${bearPayout}x`}</span>
