@@ -62,7 +62,8 @@ module betos::prediction {
     }
 
     struct BetContainer has key {
-        bets: Table<u64, Bet> // key: epoch -> value: Bet
+        bets: Table<u64, Bet>, // key: epoch -> value: Bet
+        epochs: vector<u64>
     }
 
     // account: @betos
@@ -207,7 +208,7 @@ module betos::prediction {
         let better_address = signer::address_of(better);
         // 1. Create if not exists
         if (!exists<BetContainer>(better_address)) {
-            move_to<BetContainer>(better, BetContainer { bets: table::new<u64, Bet>() });
+            move_to<BetContainer>(better, BetContainer { bets: table::new<u64, Bet>(), epochs: vector::empty<u64>() });
         };
 
         // 2. Transfer aptos
@@ -220,6 +221,7 @@ module betos::prediction {
         // 3. Insert BetInfo into table
         let bet_container = borrow_global_mut<BetContainer>(better_address);
         table::add(&mut bet_container.bets, epoch, Bet { epoch, amount, is_bull, claimed: false } );
+        vector::push_back(&mut bet_container.epochs, epoch);
 
         // 4. Add round.bull_amount
         // vector index should be decremented by 1. e.g. epoch 1 -> index 0
