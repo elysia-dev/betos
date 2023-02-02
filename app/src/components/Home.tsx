@@ -59,7 +59,6 @@ const CardWrapper = styled(AntdCard)`
 `
 
 const Descriptions = styled.section`
-  margin-top: 100px;
   text-align: center;
   display: flex;
   justify-content: center;
@@ -87,7 +86,8 @@ const ClaimButton = styled(Button)`
 `
 
 const Board = styled.div`
-  margin-top: 150px;
+  margin-top: 100px;
+  margin-bottom: 200px;
   display: flex;
   justify-content: center;
 `
@@ -177,7 +177,7 @@ const Home: React.FC = () => {
     return parsedRounds.find((r) => r.epoch === epoch)
   }
 
-  const sliced = parsedRounds.slice(-4)
+  const sliced = parsedRounds.slice(-3)
 
   // set dummy rounds
   const dummyRound: Round = {
@@ -226,7 +226,8 @@ const Home: React.FC = () => {
       epoch: 10000,
       resultStatus: "none",
     }
-    return [{ ...nextRound }, { ...theNextRound }]
+    // return [{ ...nextRound }, { ...theNextRound }]
+    return [{ ...nextRound }]
   })()
   console.log("laterRounds", laterRounds)
 
