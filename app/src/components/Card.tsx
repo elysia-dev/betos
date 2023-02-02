@@ -119,16 +119,24 @@ const Contents = styled.div<{ mainColor: string }>`
   }
   div.detail {
     margin-top: 30px;
+
     > div:not(:first-child) {
       margin-top: 10px;
     }
     div.row {
       display: flex;
       justify-content: space-between;
+      div.diff {
+        color: ${(props) => props.mainColor};
+        justify-self: flex-end;
+      }
     }
 
     div.timer {
       font-size: 20px;
+    }
+    &.expired {
+      margin-top: 0;
     }
   }
 
@@ -193,7 +201,7 @@ const Card: React.FC<CardProps> = ({
   round,
   roundState,
   betStatusOnCurrentRound,
-  currentPrice,
+  currentPrice = 0,
 }) => {
   const [isDisabled, setIsDisabled] = useState(false)
   const setDisabled = () => setIsDisabled(true)
@@ -221,10 +229,15 @@ const Card: React.FC<CardProps> = ({
     epoch,
   } = round
   const { amount, claimed, isBull } = betStatusOnCurrentRound || {}
+  const isExpired = roundState === "expired"
+  const isLive = roundState === "live"
+  const isNext = roundState === "next" // 베팅가능
+  const isLater = roundState === "later"
 
   const priceDiff = (function () {
-    const isBullish = closePrice > lockPrice
-    const abs = Math.abs(closePrice - lockPrice)
+    const base = isLive ? currentPrice : closePrice
+    const isBullish = base > lockPrice
+    const abs = Math.abs(base - lockPrice)
     const diff = formatNumber(abs, 5)
     return {
       isBullish,
@@ -247,11 +260,6 @@ const Card: React.FC<CardProps> = ({
 
   // 베팅이 끝난경우 UX가  동일
   const isFinished = ["expired", "live"].includes(roundState)
-
-  const isExpired = roundState === "expired"
-  const isLive = roundState === "live"
-  const isNext = roundState === "next" // 베팅가능
-  const isLater = roundState === "later"
 
   const isBullish = (function () {
     if (roundState === "expired" || roundState === "next") {
@@ -348,7 +356,7 @@ const Card: React.FC<CardProps> = ({
             <div>Closed Price</div>
             <div className="summary">
               <div className="price">${formatNumber(closePrice, 4)}</div>
-              <div className="diff">${priceDiffDescription}</div>
+              {/* <div className="diff">${priceDiffDescription}</div> */}
             </div>
           </div>
         )}
@@ -448,6 +456,11 @@ const Card: React.FC<CardProps> = ({
             <div className="row">
               <span className="title">Locked Price:</span>
               <span className="content">${lockPrice}</span>
+            </div>
+
+            <div className="row">
+              <div></div>
+              <div className="diff">${priceDiffDescription}</div>
             </div>
             <div className="row">
               <span className="title">Prize Pool:</span>
