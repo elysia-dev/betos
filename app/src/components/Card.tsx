@@ -422,7 +422,7 @@ const Card: React.FC<CardProps> = ({
               onChange={(value) => {
                 value && setBetAmount(value)
               }}
-              step={1}
+              step={0.01}
               value={betAmount}
               min={0.001}
               max={100}
