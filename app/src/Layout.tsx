@@ -11,7 +11,6 @@ const LayoutComponent: React.FC<Props> = ({ children }) => {
   const {
     token: { colorBgContainer, colorPrimaryBg },
   } = theme.useToken()
-  console.log("colorBgContainer", colorBgContainer)
 
   const naviagation = ["Home", "Dashboard", "Claim"]
 

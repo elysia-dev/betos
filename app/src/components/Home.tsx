@@ -10,7 +10,8 @@ import { Types, AptosClient, getAddressFromAccountOrAddress } from "aptos"
 import useAptosModule from "../useAptosModule"
 import Card from "./Card"
 import dummyRounds, { genDummy } from "./dummyRounds"
-import { aptToNumber, parseBetStatus, parseRound } from "../utils"
+import dummyRounds2 from "./dummyRounds2"
+import { aptToNumber, formatNumber, parseBetStatus, parseRound } from "../utils"
 import { BetStatus, RawRound, Round } from "../types"
 import {
   APT_USD_TESTNET_PRICE_ID,
@@ -97,13 +98,11 @@ const Home: React.FC = () => {
     token: { colorPrimaryText },
   } = theme.useToken()
   const [myEpochs, setMyEpochs] = useState<BetStatus[]>([])
-  console.log("myEpochs", myEpochs)
   const { client, account, address } = useAptosModule()
 
   const [betosResources, setBetosResources] = React.useState<
     Types.MoveResource[]
   >([])
-  console.log("betosResources", betosResources)
 
   // 연결된 지갑에 있는 리소스
   const [accountResources, setAccountResources] = React.useState<
@@ -113,9 +112,12 @@ const Home: React.FC = () => {
   const [betStatusOnCurrentRound, setBetStatusOnCurrentRound] =
     useState<BetStatus>()
 
-  console.log("accountResources", accountResources)
+  // console.log("myEpochs", myEpochs)
+  // console.log("betosResources", betosResources)
+  // console.log("accountResources", accountResources)
   // console.log("betStatusOnCurrentRound", betStatusOnCurrentRound)
 
+  // console.log("accountResources", accountResources)
   const handleOfBetContainer = useMemo(() => {
     const accountResource = accountResources.find(
       (r) => r?.type === RESOURCE_KEY_BET,
@@ -126,13 +128,13 @@ const Home: React.FC = () => {
 
     return data?.bets?.handle
   }, [accountResources])
+  console.log("handleOfBetContainer", handleOfBetContainer)
+  console.log("betosResources", betosResources)
 
   const epochsOfBetContainer = useMemo(() => {
     const accountResource = accountResources.find(
       (r) => r?.type === RESOURCE_KEY_BET,
     )
-    console.log("RESOURCE_KEY_BET", RESOURCE_KEY_BET)
-    console.log("accountResource", accountResource)
     const data = accountResource?.data as
       | { bets: { handle: string }; epochs: string[] }
       | undefined
@@ -140,18 +142,21 @@ const Home: React.FC = () => {
     return map(data?.epochs, (e) => Number(e))
   }, [accountResources])
 
+  console.log("RESOURCE_KEY_ROUND", RESOURCE_KEY_ROUND)
   const betosResource = betosResources.find(
     (r) => r?.type === RESOURCE_KEY_ROUND,
   )
+  console.log("betosResource", betosResource)
   const data = betosResource?.data as
     | { rounds: RawRound[]; current_epoch: string }
     | undefined
+  console.log("data", data)
   const fetchedRounds = data?.rounds || []
   const currentEpoch = Number(data?.current_epoch) || 0
-  const dummyRounds = genDummy()
 
   const USE_DUMMY = false
-  const rounds = USE_DUMMY ? dummyRounds : fetchedRounds
+  const dummyRounds = genDummy()
+  const rounds = USE_DUMMY ? dummyRounds2 : fetchedRounds
   console.log("rounds", rounds)
 
   const parsedRounds = rounds.map(parseRound)
@@ -201,13 +206,11 @@ const Home: React.FC = () => {
   }, [])
 
   useEffect(() => {
-    console.log("address", address)
     if (!address) return
 
     // 연결된 account의 bet 정보 fetch
     const fetchAccountResources = async () => {
       const accountResources = await client.getAccountResources(address)
-      console.log("accountResources fetched", accountResources)
       setAccountResources(accountResources)
     }
 
@@ -254,7 +257,6 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     const fetch = async () => {
-      console.log("epochsOfBetContainer", epochsOfBetContainer)
       if (!epochsOfBetContainer) return
       if (!handleOfBetContainer) return
 
@@ -297,22 +299,9 @@ const Home: React.FC = () => {
       arguments: [],
       type_arguments: [],
     }
-    console.log("transaction", transaction)
 
     await window.aptos.signAndSubmitTransaction(transaction)
   }
-
-  // const handleBet = () => {
-  //   const transaction = {
-  //     type: "entry_function_payload",
-  //     function: `${BETOS_ADDRESS}::${MODULE_NAME}::set_message`,
-  //     arguments: [message],
-  //     type_arguments: [],
-  //   };
-  //   console.log("transaction", transaction);
-
-  //   await window.aptos.signAndSubmitTransaction(transaction);
-  // }
 
   const handleClickClaim = async () => {
     const ok = window.confirm(`Claim all bets. Is it okay?`)
@@ -324,10 +313,8 @@ const Home: React.FC = () => {
       arguments: [],
       type_arguments: [],
     }
-    console.log("transaction", transaction)
 
     const response = await window.aptos.signAndSubmitTransaction(transaction)
-    console.log("response", response)
   }
 
   const checkRoundClosed = (round: Round) => !!round.closePrice
@@ -345,7 +332,8 @@ const Home: React.FC = () => {
         console.warn("No round founded, epoch num: ", epoch)
         return acc
       }
-      const resultStatus = round.resultStatus
+      const { resultStatus, totalAmount, bullAmount, bearAmount } = round
+
       const isClosedRound = checkRoundClosed(round)
       // round not closed
       if (!isClosedRound || claimed) {
@@ -357,18 +345,27 @@ const Home: React.FC = () => {
         if (resultStatus === "bear") return !isBull
         else return false
       })()
-      return isWin ? acc + amount : acc
+
+      const reward = (function () {
+        if (!isWin) return 0
+        const payout = totalAmount / (isBull ? bullAmount : bearAmount)
+        return payout * amount
+      })()
+
+      return isWin ? acc + reward : acc
     }, 0)
-    return sum
+    return formatNumber(sum, 10)
   })()
   return (
     <Wrapper>
+      <div>My address: {address}</div>
+      <div>Bettos address: {BETOS_ADDRESS}</div>
       <div>currentEpoch: {currentEpoch}</div>
       <Button onClick={addRound}>Add round</Button>
       <Descriptions>
         <h2>Your Total Prize</h2>
-        <h4 style={{ color: colorPrimaryText }}>+0.00013 BNB</h4>
-        <ClaimButton onClick={handleClickClaim}>
+        <h4 style={{ color: colorPrimaryText }}>+ {claimableAmounts} APTs</h4>
+        <ClaimButton disabled={!claimableAmounts} onClick={handleClickClaim}>
           <img src={PartyImage} width={20} />
           Claim
         </ClaimButton>
@@ -388,21 +385,19 @@ const Home: React.FC = () => {
               if (resultStatus === "bear") return !isBull
               else return false
             })()
-            console.log("isWin", isWin)
             const state = !isClosedRound ? "PENDING" : isWin ? "WIN" : "FAIL"
             return (
               <div className="epoch-summary" key={`${index}+${epoch}`}>
-                <div>Number: {epoch}</div>
+                <div>#{epoch}</div>
                 <div>Claimed: {claimed ? "true" : "false"}</div>
                 <div>
-                  You betted: {isBull ? "Up" : "Down"} with {amount} APT
+                  Bet on: {isBull ? "Up" : "Down"} with {amount} APT
                 </div>
                 {isClosedRound && <div>Round closed with: {resultStatus} </div>}
-                <div>State: {state}</div>
+                <div>isWin?: {state}</div>
               </div>
             )
           })}
-          You can claim {claimableAmounts} APT
         </div>
       </div>
       <Board>
@@ -416,13 +411,25 @@ const Home: React.FC = () => {
             if (diff === 0) return "next"
             return "later"
           })()
+          if (roundState === "live") {
+            return (
+              <Card
+                key={index}
+                round={round}
+                roundState={roundState}
+                betStatusOnCurrentRound={betStatusOnCurrentRound}
+                currentPrice={
+                  pythOffChainPrice?.getPriceAsNumberUnchecked() || 0
+                }
+              />
+            )
+          }
           return (
             <Card
               key={index}
               round={round}
               roundState={roundState}
               betStatusOnCurrentRound={betStatusOnCurrentRound}
-              currentPrice={pythOffChainPrice?.getPriceAsNumberUnchecked() || 0}
             />
           )
         })}

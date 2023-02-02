@@ -111,7 +111,7 @@ type CardProps = {
   round: Round
   roundState: RoundState
   betStatusOnCurrentRound?: BetStatus
-  currentPrice: number
+  currentPrice?: number
 }
 
 function useInterval(callback: any, delay: any) {
@@ -157,7 +157,7 @@ const Card: React.FC<CardProps> = ({
   const { client, account, address, modules } = useAptosModule()
   const [betMode, setBetMode] = useState<"up" | "down" | null>(null)
   const [betAmount, setBetAmount] = useState(0)
-  const DEFUALT_BET_AMOUNT = 5
+  const DEFUALT_BET_AMOUNT = 0.02
 
   useEffect(() => {
     setBetAmount(DEFUALT_BET_AMOUNT)
@@ -256,13 +256,18 @@ const Card: React.FC<CardProps> = ({
     const transaction = {
       type: "entry_function_payload",
       function: `${BETOS_ADDRESS}::${MODULE_NAME}::bet`,
-      arguments: [epoch, aptAmount, isBull],
+      arguments: [String(epoch), String(aptAmount), String(isBull)],
       type_arguments: [],
     }
     console.log("transaction", transaction)
 
-    const response = await window.aptos.signAndSubmitTransaction(transaction)
-    console.log("response", response)
+    try {
+      const response = await window.aptos.signAndSubmitTransaction(transaction)
+      console.log("response", response)
+    } catch (e: any) {
+      console.log("!!!!!!!!!!!!!!!!erorr in bet!!!!!!!!!!!!!!!!!!")
+      console.log("e", e)
+    }
   }
 
   return (
