@@ -37,6 +37,7 @@
       "react-app/jest"
     ]
   },
+  "type": "module",
   "browserslist": {
     "production": [
       ">0.2%",
@@ -51,6 +52,7 @@
   },
   "devDependencies": {
     "@types/styled-components": "^5.1.26",
+    "@vercel/node": "^2.9.0",
     "aptos": "^1.6.0"
   }
 }
