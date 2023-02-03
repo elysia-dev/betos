@@ -1,6 +1,14 @@
 # Betos
 
-Aptos Price prediction competition.
+Aptos price betting platform, built in Aptos Seoul Hackathon 2023.
+
+- Website: https://betos.vercel.app/ (Only for Testnet, and Petra wallet now)
+- Pitch deck: https://drive.google.com/file/d/1QrnIiITBZNtSZGgFaoIxQsrOlPknt6A2
+- Demo: https://youtu.be/1lbOFhgoUiw
+
+## Code structure
+
+-
 
 ## Getting started
 
