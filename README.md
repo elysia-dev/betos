@@ -8,8 +8,11 @@ Aptos price betting platform, built in Aptos Seoul Hackathon 2023.
 
 ## Code structure
 
+This is basically Move project with several subdirs.
+
 - `app`: React frontend
 - `cron`: Serverless framework to call `execute_round` every 5 minute.
+- `scripts`: Admin scripts.
 
 ## Getting started
 
