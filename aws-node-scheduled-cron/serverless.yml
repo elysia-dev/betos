@@ -1,0 +1,20 @@
+service: aws-node-scheduled-cron
+
+frameworkVersion: "3"
+
+plugins:
+  - serverless-plugin-typescript
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+  region: ap-northeast-2
+  environment:
+    APTOS_KEY: ${ssm:/betos/test/aptos_key}
+    BETOS_ADDRESS: "0x14f814d7bb2f2abf35ef9921c9c78c009d78d85c76987f3160c28d96cabc8f61"
+
+functions:
+  rateHandler:
+    handler: handler.run
+    events:
+      - schedule: cron(0/5 * * * ? *)
