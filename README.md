@@ -6,6 +6,8 @@ Aptos price betting platform, built in Aptos Seoul Hackathon 2023.
 - Pitch deck: https://drive.google.com/file/d/1QrnIiITBZNtSZGgFaoIxQsrOlPknt6A2
 - Demo: https://youtu.be/1lbOFhgoUiw
 
+![website-preview](https://user-images.githubusercontent.com/18223805/216614301-c3013802-6351-46fb-b69c-857590a8ebe2.png)
+
 ## Code structure
 
 This is basically Move project with several subdirs.
