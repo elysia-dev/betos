@@ -218,6 +218,7 @@ const Claim: React.FC = () => {
       const { resultStatus, totalAmount, bullAmount, bearAmount } = round || {}
       const isClosedRound = checkRoundClosed(round)
       const isWin = (function () {
+        if (totalAmount == amount) return true
         if (resultStatus === "up") return isBull
         if (resultStatus === "down") return !isBull
         else return false

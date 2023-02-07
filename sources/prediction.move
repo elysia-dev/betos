@@ -127,7 +127,6 @@ module betos::prediction {
         round.close_price = price;
     }
 
-    // TODO: rename to execute_round
     // onlyOwner
     public entry fun execute_round(account: &signer, pyth_update_data: vector<vector<u8>>) acquires RoundContainer {
         let account_address = signer::address_of(account);
@@ -256,7 +255,14 @@ module betos::prediction {
         bet(better, epoch, amount, false);
     }
 
+    // refund when there is only one better
     fun claim(resource_signer: &signer, account_address: address, round: &Round, bet: &mut Bet) {
+        if(round.total_amount == bet.amount) {
+            coin::transfer<AptosCoin>(resource_signer, account_address, bet.amount);
+            bet.claimed = true;
+            return
+        };
+
         // TODO: handle the draw
         if (round.lock_price <= round.close_price && bet.is_bull) {
             let prize = (bet.amount * round.total_amount) / round.bull_amount;
