@@ -2,6 +2,7 @@ import { AptosPriceServiceConnection } from "@pythnetwork/pyth-aptos-js";
 import { AptosAccount, AptosClient, TxnBuilderTypes, BCS } from "aptos";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
+import { Buffer } from "buffer";
 
 const argv = yargs(hideBin(process.argv))
   .option("action", {
@@ -33,8 +34,21 @@ async function main() {
   // In order to use Pyth prices in your protocol you need to submit the price update data to Pyth contract in your target
   // chain. `getPriceUpdateData` creates the update data which can be submitted to your contract. Then your contract should
   // call the Pyth Contract with this data.
-  const priceUpdateData = await connection.getPriceFeedsUpdateData(priceIds);
+  const priceFeeds = await connection.getLatestPriceFeeds(priceIds);
+  console.log(priceFeeds);
 
+  const latestVaas = await connection.getLatestVaas(priceIds);
+  console.log(latestVaas);
+
+  const x = latestVaas.map((vaa) =>
+    Array.from(Buffer.from(vaa, "base64").toString("hex")).join("")
+  );
+  console.log(x);
+
+  const priceUpdateData = await connection.getPriceFeedsUpdateData(priceIds);
+  console.log(priceUpdateData.toString);
+
+  /*
   // Create a transaction and submit to your contract using the price update data
   const client = new AptosClient(endpoint);
   if (process.env.APTOS_KEY === undefined) {
@@ -72,10 +86,19 @@ async function main() {
     throw new Error("action must be start, lock, or execute");
   }
 
+  console.log(
+    Buffer.from(
+      AptosPriceServiceConnection.serializeUpdateData(priceUpdateData)
+    ).toString("hex")
+  );
+  */
+
+  /*
   await client.generateSignSubmitWaitForTransaction(
     sender,
     new TxnBuilderTypes.TransactionPayloadEntryFunction(entryFunction)
   );
+  */
 }
 
 main().catch((error) => {
