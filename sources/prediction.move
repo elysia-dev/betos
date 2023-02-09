@@ -431,7 +431,8 @@ module betos::prediction {
 
         // create a resource account from the origin account, mocking the module publishing process
         resource_account::create_resource_account(origin_account, vector::empty<u8>(), vector::empty<u8>());
-        let resource_addr = aptos_framework::account::create_resource_address(&user_addr, seed);
+        let user_addr = signer::address_of(origin_account);
+        let resource_addr = aptos_framework::account::create_resource_address(&user_addr, vector::empty<u8>());
         debug::print(&resource_addr);
 
         init_module(resource_account);
@@ -454,8 +455,8 @@ module betos::prediction {
         let (start_timestamp, lock_timestamp, close_timestamp, _, _) = get_round(epoch);
 
         assert!(start_timestamp == now, 0);
-        assert!(lock_timestamp == now + 300, 0);
-        assert!(close_timestamp == now + 600, 0);
+        assert!(lock_timestamp == now + INTERVAL_SECONDS, 0);
+        assert!(close_timestamp == now + 2 * INTERVAL_SECONDS, 0);
     }
 
 /*
