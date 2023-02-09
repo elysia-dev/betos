@@ -27,7 +27,7 @@ const RESOURCE_KEY_BET = `${BETOS_ADDRESS}::${MODULE_NAME}::BetContainer`
 const RESOURCE_KEY_ROUND = `${BETOS_ADDRESS}::${MODULE_NAME}::RoundContainer`
 
 const HomeComponent: React.FC = () => {
-  const { client, address } = useAptosModule()
+  const { client, address, modules } = useAptosModule()
   const { pythOffChainPrice } = usePyth()
   const currentAptosPrice = pythOffChainPrice?.getPriceAsNumberUnchecked() || 0
 
@@ -58,8 +58,11 @@ const HomeComponent: React.FC = () => {
 
   useEffect(() => {
     fetchBetosResources()
+  }, [modules])
+
+  useEffect(() => {
     fetchAccountResources()
-  }, [])
+  }, [address])
 
   const roundResource = betosResources.find(
     (r) => r?.type === RESOURCE_KEY_ROUND,

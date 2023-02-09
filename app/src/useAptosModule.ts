@@ -29,12 +29,8 @@ const useAptosModule = () => {
 
   React.useEffect(() => {
     client.getAccountModules(BETOS_ADDRESS).then(setModules)
-  }, [])
+  }, [address, account])
 
-  // React.useEffect(() => {
-  //   if (!address) return
-  //   client.getAccountModules(BETOS_ADDRESS).then(setModules)
-  // }, [address])
   return {
     address,
     account,
