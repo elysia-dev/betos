@@ -2,9 +2,10 @@ import { Progress } from "antd"
 import React, { useEffect } from "react"
 import styled from "styled-components"
 import { ROUND_STEP } from "../constants"
-import useMinusCounter from "../hooks/useMinusCounter"
+import usePlusCounter from "../hooks/usePlusCounter"
 type Props = {
   start: number
+  end: number
   showProgress?: boolean
   setDisabled?: () => void
   style?: any
@@ -17,23 +18,20 @@ const Wrapper = styled.div`
 `
 // minus counter
 // all miliseconds
-const MinusTimer: React.FC<Props> = ({
+const PlusTimer: React.FC<Props> = ({
   start,
+  end,
   showProgress,
   setDisabled,
   style,
 }) => {
-  if (start < 0) {
-    return (
-      <Wrapper style={style} className="timer">
-        finished
-      </Wrapper>
-    )
-  }
+  console.log("start", start)
+  console.log("end", end)
 
-  const time = useMinusCounter(start)
+  const time = usePlusCounter(start)
   const detail = getTimeDetail(time)
   const progress = (time / ROUND_STEP) * 100
+  console.log("progress", progress)
 
   useEffect(() => {
     if (time < 0 && setDisabled) {
@@ -51,11 +49,11 @@ const MinusTimer: React.FC<Props> = ({
     </Wrapper>
   )
 }
-export default MinusTimer
+export default PlusTimer
 
 const getTimeDetail = (miliseconds: number) => {
   if (miliseconds < 0) {
-    return "finished"
+    return null
   }
   const minutes = Math.floor(miliseconds / 60000)
   const seconds = ((miliseconds % 60000) / 1000).toFixed(0)

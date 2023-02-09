@@ -11,9 +11,11 @@ import {
   BETOS_ADDRESS,
   MODULE_NAME,
   PRIMARY_TEXT_COLOR,
+  ROUND_STEP,
   SECONDARY_COLOR,
 } from "../constants"
 import MinusTimer from "./MinusTimer"
+import PlusTimer from "./PlusTimer"
 
 const CardWrapper = styled.div<{
   mainColor: string
@@ -329,6 +331,18 @@ const Card: React.FC<CardProps> = ({
       <Header mainColor={mainColor}>
         <span className="number">{`#${epoch}`}</span>
         <span className="status">{title}</span>
+        {isLive && (
+          <PlusTimer
+            style={{
+              width: "100%",
+              marginLeft: "5px",
+            }}
+            setDisabled={setDisabled}
+            start={round.closeTimestamp - currentTimestamp}
+            end={ROUND_STEP}
+            showProgress
+          />
+        )}
       </Header>
       <Contents mainColor={mainColor}>
         {isLive && (
@@ -341,11 +355,6 @@ const Card: React.FC<CardProps> = ({
                   : "Loading..."}
               </div>
             </div>
-            <MinusTimer
-              setDisabled={setDisabled}
-              start={round.closeTimestamp - currentTimestamp}
-              showProgress
-            />
           </div>
         )}
         {isExpired && (
@@ -353,7 +362,6 @@ const Card: React.FC<CardProps> = ({
             <div>Closed Price</div>
             <div className="summary">
               <div className="price">${formatNumber(closePrice, 4)}</div>
-              {/* <div className="diff">${priceDiffDescription}</div> */}
             </div>
           </div>
         )}
