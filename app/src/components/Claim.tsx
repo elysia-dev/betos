@@ -9,7 +9,7 @@ import { PRIMARY_TEXT_COLOR, SECONDARY_COLOR } from "../constants"
 import type { ColumnsType } from "antd/es/table"
 import styled from "styled-components"
 
-const { Title } = Typography
+const { Title, Text } = Typography
 
 interface BetRecord {
   key: string
@@ -34,7 +34,7 @@ const Wrapper = styled.div`
       }
     }
     tr.claimable {
-      background-color: blue;
+      background-color: rgba(224, 255, 255, 0.1);
     }
   }
 `
@@ -133,12 +133,14 @@ const Claim: React.FC<Props> = ({
         const { resultStatus, totalAmount, bullAmount, bearAmount } =
           round || {}
         const isClosedRound = checkRoundClosed(round)
+
         const isWin = (function () {
           if (totalAmount == amount) return true
           if (resultStatus === "up") return isBull
           if (resultStatus === "down") return !isBull
           else return false
         })()
+
         const state: string =
           !isClosedRound || isCurrentEpoch ? "PENDING" : isWin ? "WIN" : "FAIL"
 
@@ -203,7 +205,7 @@ const Claim: React.FC<Props> = ({
   return (
     <Wrapper>
       <Header>
-        <Title level={4}>Claimable Amounts : {claimableAmounts} APT</Title>
+        <Title level={3}>Claimable Amounts : {claimableAmounts} APT</Title>
         <Button>Claim</Button>
       </Header>
 
@@ -220,6 +222,9 @@ const Claim: React.FC<Props> = ({
         columns={columns}
         dataSource={tableData}
       />
+      <Text type={"secondary"}>
+        You can claim round if you are the only one participant in the round
+      </Text>
     </Wrapper>
   )
 }
