@@ -3,6 +3,7 @@ import { BrowserRouter } from "react-router-dom"
 import Routes from "./Routes"
 import Layout from "./Layout"
 import { ConfigProvider, theme } from "antd"
+import ContractProvider from "./ContractProvider"
 
 type Props = any
 const Root: React.FC<Props> = () => {
@@ -18,9 +19,11 @@ const Root: React.FC<Props> = () => {
   return (
     <BrowserRouter>
       <ConfigProvider theme={theme2}>
-        <Layout>
-          <Routes />
-        </Layout>
+        <ContractProvider>
+          <Layout>
+            <Routes />
+          </Layout>
+        </ContractProvider>
       </ConfigProvider>
     </BrowserRouter>
   )
