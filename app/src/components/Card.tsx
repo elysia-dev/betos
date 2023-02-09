@@ -1,5 +1,5 @@
 import styled from "styled-components"
-import { Button, InputNumber, theme, Typography } from "antd"
+import { Button, InputNumber, theme } from "antd"
 import { gray } from "@ant-design/colors"
 import { useEffect, useState, useRef } from "react"
 import { RoundState } from "./Home"
@@ -13,7 +13,6 @@ import {
   PRIMARY_TEXT_COLOR,
   SECONDARY_COLOR,
 } from "../constants"
-import useCounter from "../hooks/useMinusCounter"
 import MinusTimer from "./MinusTimer"
 
 const CardWrapper = styled.div<{
@@ -152,7 +151,7 @@ type CardProps = {
   round: Round
   roundState: RoundState
   betStatusOnCurrentRound?: BetStatus
-  currentPrice?: number
+  currentAptosPrice?: number
 }
 
 function useInterval(callback: any, delay: any) {
@@ -201,9 +200,8 @@ const Card: React.FC<CardProps> = ({
   round,
   roundState,
   betStatusOnCurrentRound,
-  currentPrice = 0,
+  currentAptosPrice = 0,
 }) => {
-  console.log("currentPrice", currentPrice)
   const [isDisabled, setIsDisabled] = useState(false)
   const setDisabled = () => setIsDisabled(true)
   const {
@@ -236,7 +234,7 @@ const Card: React.FC<CardProps> = ({
   const isLater = roundState === "later"
 
   const priceDiff = (function () {
-    const base = isLive ? currentPrice : closePrice
+    const base = isLive ? currentAptosPrice : closePrice
     const isBullish = base > lockPrice
     const abs = Math.abs(base - lockPrice)
     const diff = formatNumber(abs, 5)
@@ -340,8 +338,8 @@ const Card: React.FC<CardProps> = ({
             <div>Current Price</div>
             <div className="summary">
               <div className="price">
-                {currentPrice
-                  ? `$${formatNumber(currentPrice, 4)}`
+                {currentAptosPrice
+                  ? `$${formatNumber(currentAptosPrice, 4)}`
                   : "Loading..."}
               </div>
             </div>

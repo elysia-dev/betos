@@ -10,3 +10,9 @@ export const MODULE_NAME = "prediction"
 
 export const SECONDARY_COLOR = "#F57272"
 export const PRIMARY_TEXT_COLOR = "#61c19b"
+
+const FIVE_MINUTES = 5 * 60 * 1000
+const TEN_MINUTES = 10 * 60 * 1000
+const ONE_HOUR = 60 * 60 * 1000
+
+export const ROUND_STEP = FIVE_MINUTES

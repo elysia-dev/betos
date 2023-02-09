@@ -1,25 +1,16 @@
-import { compact, map } from "lodash"
-
-import { Price, PriceFeed } from "@pythnetwork/pyth-common-js"
-import { AptosPriceServiceConnection } from "@pythnetwork/pyth-aptos-js"
-import React, { useEffect, useMemo, useState } from "react"
+import React, { useState } from "react"
 import styled from "styled-components"
-import { Button, theme, Card as AntdCard } from "antd"
+import { Button, Card as AntdCard } from "antd"
 import PartyImage from "../assets/party.png"
-import { Types, AptosClient, getAddressFromAccountOrAddress } from "aptos"
-import useAptosModule from "../useAptosModule"
+import { Types } from "aptos"
 import Card from "./Card"
-import dummyRounds, { genDummy } from "./dummyRounds"
-import dummyRounds2 from "./dummyRounds2"
-import { aptToNumber, formatNumber, parseBetStatus, parseRound } from "../utils"
-import { BetStatus, RawRound, Round } from "../types"
+import { formatNumber } from "../utils"
+import { BetStatus, Round } from "../types"
 import {
-  APT_USD_TESTNET_PRICE_ID,
   BETOS_ADDRESS,
   MODULE_NAME,
   PRIMARY_TEXT_COLOR,
   SECONDARY_COLOR,
-  TESTNET_PRICE_SERVICE,
 } from "../constants"
 
 const Wrapper = styled.div`
@@ -98,261 +89,29 @@ const Board = styled.div`
 // later: 아직 bet불가 (다음 라운드)
 export type RoundState = "expired" | "live" | "next" | "later"
 
-const testnetConnection = new AptosPriceServiceConnection(TESTNET_PRICE_SERVICE)
+type Props = {
+  betosResources: Types.MoveResource[]
+  accountResources: Types.MoveResource[]
+  getRoundByEpoch: any
+  currentRound?: Round
+  totalRounds: Round[]
+  currentEpoch: number
+  betStatusOnCurrentRound?: BetStatus
+  myEpochs?: BetStatus[]
+  address: string | null
+  currentAptosPrice: number
+}
 
-const RESOURCE_KEY_BET = `${BETOS_ADDRESS}::${MODULE_NAME}::BetContainer`
-const RESOURCE_KEY_ROUND = `${BETOS_ADDRESS}::${MODULE_NAME}::RoundContainer`
-
-const Home: React.FC = () => {
-  const {
-    token: { colorPrimaryText },
-  } = theme.useToken()
+const Home: React.FC<Props> = ({
+  getRoundByEpoch,
+  totalRounds,
+  currentEpoch,
+  betStatusOnCurrentRound,
+  myEpochs,
+  address,
+  currentAptosPrice,
+}) => {
   const [showDevInfo, setShowDevInfo] = useState(false)
-  const [myEpochs, setMyEpochs] = useState<BetStatus[]>([])
-  const { client, account, address } = useAptosModule()
-
-  const [betosResources, setBetosResources] = React.useState<
-    Types.MoveResource[]
-  >([])
-
-  // 연결된 지갑에 있는 리소스
-  const [accountResources, setAccountResources] = React.useState<
-    Types.MoveResource[]
-  >([])
-
-  const [betStatusOnCurrentRound, setBetStatusOnCurrentRound] =
-    useState<BetStatus>()
-
-  // console.log("myEpochs", myEpochs)
-  // console.log("betosResources", betosResources)
-  // console.log("accountResources", accountResources)
-  // console.log("betStatusOnCurrentRound", betStatusOnCurrentRound)
-
-  // console.log("accountResources", accountResources)
-  const handleOfBetContainer = useMemo(() => {
-    const accountResource = accountResources.find(
-      (r) => r?.type === RESOURCE_KEY_BET,
-    )
-    const data = accountResource?.data as
-      | { bets: { handle: string }; epochs: number[] }
-      | undefined
-
-    return data?.bets?.handle
-  }, [accountResources])
-  console.log("handleOfBetContainer", handleOfBetContainer)
-  console.log("betosResources", betosResources)
-
-  const epochsOfBetContainer = useMemo(() => {
-    const accountResource = accountResources.find(
-      (r) => r?.type === RESOURCE_KEY_BET,
-    )
-    const data = accountResource?.data as
-      | { bets: { handle: string }; epochs: string[] }
-      | undefined
-
-    return map(data?.epochs, (e) => Number(e))
-  }, [accountResources])
-
-  console.log("RESOURCE_KEY_ROUND", RESOURCE_KEY_ROUND)
-  const betosResource = betosResources.find(
-    (r) => r?.type === RESOURCE_KEY_ROUND,
-  )
-  console.log("betosResource", betosResource)
-  const data = betosResource?.data as
-    | { rounds: RawRound[]; current_epoch: string }
-    | undefined
-  console.log("data", data)
-  const fetchedRounds = data?.rounds || []
-  const currentEpoch = Number(data?.current_epoch) || 0
-
-  const USE_DUMMY = false
-  const dummyRounds = genDummy()
-  const rounds = USE_DUMMY ? dummyRounds2 : fetchedRounds
-
-  const parsedRounds = rounds.map(parseRound)
-  console.log("parsedRounds", parsedRounds)
-
-  // TODO: key를 epoch로 하게 해서 개선하기, 이거대로면 매번 round 배열을 순회해야함
-  const getRoundByEpoch = (epoch: number) => {
-    return parsedRounds.find((r) => r.epoch === epoch)
-  }
-
-  const sliced = parsedRounds.slice(-3)
-
-  // set dummy rounds
-  const dummyRound: Round = {
-    bearAmount: 0,
-    bullAmount: 0,
-    totalAmount: 0,
-    closePrice: 0,
-    closeTimestamp: 0,
-    lockTimestamp: 0,
-    startTimestamp: 0,
-    lockPrice: 0,
-    epoch: 100,
-    resultStatus: "none",
-  }
-
-  const currentRound = useMemo(
-    () => getRoundByEpoch(currentEpoch),
-    [currentEpoch],
-  )
-  const laterRounds: Round[] = (function () {
-    const fiveMinutes = 5 * 60 * 1000
-    const tenMinutes = 2 * 5 * 60 * 1000
-
-    const nextRound: Round = {
-      bearAmount: 0,
-      bullAmount: 0,
-      totalAmount: 0,
-      closePrice: 0,
-      closeTimestamp: (currentRound?.closeTimestamp || 0) + fiveMinutes,
-      lockTimestamp: (currentRound?.lockTimestamp || 0) + fiveMinutes,
-      startTimestamp: (currentRound?.startTimestamp || 0) + fiveMinutes,
-      lockPrice: 0,
-      epoch: 10000,
-      resultStatus: "none",
-    }
-
-    const theNextRound: Round = {
-      bearAmount: 0,
-      bullAmount: 0,
-      totalAmount: 0,
-      closePrice: 0,
-      closeTimestamp: (currentRound?.closeTimestamp || 0) + tenMinutes,
-      lockTimestamp: (currentRound?.lockTimestamp || 0) + tenMinutes,
-      startTimestamp: (currentRound?.startTimestamp || 0) + tenMinutes,
-      lockPrice: 0,
-      epoch: 10000,
-      resultStatus: "none",
-    }
-    // return [{ ...nextRound }, { ...theNextRound }]
-    return [{ ...nextRound }]
-  })()
-  console.log("laterRounds", laterRounds)
-
-  const totalRounds = [...sliced, ...laterRounds]
-
-  const [pythOffChainPrice, setPythOffChainPrice] = React.useState<
-    Price | undefined
-  >(undefined)
-
-  // Subscribe to offchain prices. These are the prices that a typical frontend will want to show.
-  testnetConnection.subscribePriceFeedUpdates(
-    [APT_USD_TESTNET_PRICE_ID],
-    (priceFeed: PriceFeed) => {
-      const price = priceFeed.getPriceUnchecked() // Fine to use unchecked (not checking for staleness) because this must be a recent price given that it comes from a websocket subscription.
-      setPythOffChainPrice(price)
-    },
-  )
-
-  useEffect(() => {
-    // round 정보 fetch
-    const fetchBetosResources = async () => {
-      const betosResources = await client.getAccountResources(BETOS_ADDRESS)
-      setBetosResources(betosResources)
-    }
-    fetchBetosResources()
-  }, [])
-
-  useEffect(() => {
-    if (!address) return
-
-    // 연결된 account의 bet 정보 fetch
-    const fetchAccountResources = async () => {
-      const accountResources = await client.getAccountResources(address)
-      setAccountResources(accountResources)
-    }
-
-    fetchAccountResources()
-  }, [address])
-
-  const getTableItemRequest = (key: number) => {
-    if (!key) return null
-    return {
-      key_type: `u64`,
-      value_type: `${BETOS_ADDRESS}::${MODULE_NAME}::Bet`,
-      key: String(key),
-    }
-  }
-
-  const getBetStatus = async (
-    handleOfBetContainer: any,
-    tableItemRequest: any,
-  ) => {
-    if (!handleOfBetContainer) return
-    if (!tableItemRequest) return
-    const rawBetStatus = await client.getTableItem(
-      handleOfBetContainer,
-      tableItemRequest,
-    )
-    return rawBetStatus
-  }
-
-  // current round의 bet status fetch
-  useEffect(() => {
-    if (!handleOfBetContainer) return
-    const fetch = async () => {
-      const tableItemRequest = getTableItemRequest(currentEpoch)
-      const rawBetStatus = await getBetStatus(
-        handleOfBetContainer,
-        tableItemRequest,
-      )
-      if (!rawBetStatus) return
-      const parsed = parseBetStatus(rawBetStatus)
-      setBetStatusOnCurrentRound(parsed)
-    }
-    fetch()
-  }, [handleOfBetContainer])
-
-  useEffect(() => {
-    const fetch = async () => {
-      if (!epochsOfBetContainer) return
-      if (!handleOfBetContainer) return
-
-      const promises = epochsOfBetContainer.map(async (epoch) => {
-        const tableItemRequest = getTableItemRequest(epoch)
-        const rawBetStatus = await getBetStatus(
-          handleOfBetContainer,
-          tableItemRequest,
-        )
-        if (!rawBetStatus) return
-        const parsed = parseBetStatus(rawBetStatus)
-        return parsed
-      })
-      const result = await Promise.all(promises)
-      const compacted = compact(result)
-      const sliced = compacted.slice(-5)
-      setMyEpochs(sliced)
-    }
-    fetch()
-  }, [epochsOfBetContainer, handleOfBetContainer])
-
-  const fetchBetStatus = async (epoch: number, handleOfBetContainer: any) => {
-    if (!epoch) return
-    if (!handleOfBetContainer) return
-    const tableItemRequest = getTableItemRequest(epoch)
-    const rawBetStatus = await getBetStatus(
-      handleOfBetContainer,
-      tableItemRequest,
-    )
-    if (!rawBetStatus) return
-    const parsed = parseBetStatus(rawBetStatus)
-    return parsed
-  }
-
-  const addRound = async (e: any) => {
-    e.preventDefault()
-    const funcName = `${BETOS_ADDRESS}::${MODULE_NAME}::add_round`
-    const transaction = {
-      type: "entry_function_payload",
-      function: funcName,
-      arguments: [],
-      type_arguments: [],
-    }
-
-    await window.aptos.signAndSubmitTransaction(transaction)
-  }
 
   const handleClickClaim = async () => {
     const ok = window.confirm(`Claim all bets. Is it okay?`)
@@ -415,12 +174,11 @@ const Home: React.FC = () => {
           <div>My address: {address}</div>
           <div>Bettos address: {BETOS_ADDRESS}</div>
           <div>currentEpoch: {currentEpoch}</div>
-          <Button onClick={addRound}>Add round</Button>
         </div>
       )}
       <Descriptions>
         <h2>Your Total Prize</h2>
-        <h4 style={{ color: colorPrimaryText }}>+ {claimableAmounts} APTs</h4>
+        <h4 style={{ color: PRIMARY_TEXT_COLOR }}>+ {claimableAmounts} APTs</h4>
         <ClaimButton disabled={!claimableAmounts} onClick={handleClickClaim}>
           <img src={PartyImage} width={20} />
           Claim
@@ -429,7 +187,7 @@ const Home: React.FC = () => {
       <div className="my-bets">
         <h4> My bets</h4>
         <div className="details">
-          {myEpochs.map((myEpoch, index) => {
+          {myEpochs?.map((myEpoch, index) => {
             const { amount, claimed, epoch, isBull } = myEpoch
             const isCurrentEpoch = epoch === Number(currentEpoch)
             const round = getRoundByEpoch(epoch)
@@ -448,16 +206,6 @@ const Home: React.FC = () => {
                 ? "WIN"
                 : "FAIL"
             return (
-              // <div className="epoch-summary" key={`${index}+${epoch}`}>
-              //   <div>#{epoch}</div>
-              //   <div>Claimed: {claimed ? "true" : "false"}</div>
-              //   <div>
-              //     Bet on: {isBull ? "Up" : "Down"} with {amount} APT
-              //   </div>
-              //   {isClosedRound && <div>Round closed with: {resultStatus} </div>}
-              //   <div>isWin?: {state}</div>
-              // </div>
-
               <CardWrapper
                 key={index}
                 title={`#${epoch}`}
@@ -535,9 +283,7 @@ const Home: React.FC = () => {
                 round={round}
                 roundState={roundState}
                 betStatusOnCurrentRound={betStatusOnCurrentRound}
-                currentPrice={
-                  pythOffChainPrice?.getPriceAsNumberUnchecked() || 0
-                }
+                currentAptosPrice={currentAptosPrice}
               />
             )
           }
@@ -556,3 +302,16 @@ const Home: React.FC = () => {
 }
 
 export default Home
+
+// const addRound = async (e: any) => {
+//   e.preventDefault()
+//   const funcName = `${BETOS_ADDRESS}::${MODULE_NAME}::add_round`
+//   const transaction = {
+//     type: "entry_function_payload",
+//     function: funcName,
+//     arguments: [],
+//     type_arguments: [],
+//   }
+
+//   await window.aptos.signAndSubmitTransaction(transaction)
+// }
