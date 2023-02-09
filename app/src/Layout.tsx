@@ -1,11 +1,17 @@
 import React, { ReactElement } from "react"
 import { Layout, Menu, theme } from "antd"
 import { Link } from "react-router-dom"
+import background from "./assets/aptos@1.5.png"
+import styled from "styled-components"
 
 const { Header, Content, Footer } = Layout
 type Props = {
   children: ReactElement
 }
+
+const ContentWrapper = styled.div`
+  background-image: url(${background});
+`
 
 const LayoutComponent: React.FC<Props> = ({ children }) => {
   const {
@@ -32,11 +38,17 @@ const LayoutComponent: React.FC<Props> = ({ children }) => {
           })}
         />
       </Header>
-      <Content style={{ padding: "10px 5px", minHeight: "90vh" }}>
-        <div className="site-layout-content" style={{ color: "#ffffff" }}>
-          {children}
-        </div>
-      </Content>
+      <ContentWrapper>
+        <Content
+          style={{
+            padding: "10px 5px",
+            minHeight: "90vh",
+          }}>
+          <div className="site-layout-content" style={{ color: "#ffffff" }}>
+            {children}
+          </div>
+        </Content>
+      </ContentWrapper>
       <Footer style={{ textAlign: "center" }}>Aptos Hackathon 2023</Footer>
     </Layout>
   )
