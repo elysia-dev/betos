@@ -13,6 +13,7 @@ import {
   SECONDARY_COLOR,
 } from "../constants"
 import MyBets from "./MyBets"
+import useAptosModule from "../useAptosModule"
 
 const Wrapper = styled.div``
 
@@ -65,7 +66,6 @@ type Props = {
   currentEpoch: number
   betStatusOnCurrentRound?: BetStatus
   myEpochs?: BetStatus[]
-  address: string | null
   currentAptosPrice: number
 }
 
@@ -75,9 +75,9 @@ const Home: React.FC<Props> = ({
   currentEpoch,
   betStatusOnCurrentRound,
   myEpochs,
-  address,
   currentAptosPrice,
 }) => {
+  const { address } = useAptosModule()
   const [showDevInfo, setShowDevInfo] = useState(false)
 
   const handleClickClaim = async () => {

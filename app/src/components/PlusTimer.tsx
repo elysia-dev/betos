@@ -24,13 +24,10 @@ const PlusTimer: React.FC<Props> = ({
   showProgress,
   setDisabled,
 }) => {
-  console.log("start", start)
-  console.log("end", end)
-
+  if (start > end) return null
   const time = usePlusCounter(start)
   const detail = getTimeDetail(time)
   const progress = (time / ROUND_STEP) * 100
-  console.log("progress", progress)
 
   useEffect(() => {
     if (time < 0 && setDisabled) {

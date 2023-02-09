@@ -314,10 +314,6 @@ const Card: React.FC<CardProps> = ({
   }
   // milliseconds
   const currentTimestamp = Math.floor(Date.now())
-  if (isLive) {
-    console.log("round.closeTimestamp", round.closeTimestamp)
-    console.log("currentTimestamp", currentTimestamp)
-  }
 
   return (
     <CardWrapper mainColor={mainColor} isNext={isNext} isDisabled={isDisabled}>
