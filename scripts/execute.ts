@@ -48,7 +48,6 @@ async function main() {
   const priceUpdateData = await connection.getPriceFeedsUpdateData(priceIds);
   console.log(priceUpdateData.toString);
 
-  /*
   // Create a transaction and submit to your contract using the price update data
   const client = new AptosClient(endpoint);
   if (process.env.APTOS_KEY === undefined) {
@@ -91,14 +90,11 @@ async function main() {
       AptosPriceServiceConnection.serializeUpdateData(priceUpdateData)
     ).toString("hex")
   );
-  */
 
-  /*
   await client.generateSignSubmitWaitForTransaction(
     sender,
     new TxnBuilderTypes.TransactionPayloadEntryFunction(entryFunction)
   );
-  */
 }
 
 main().catch((error) => {
