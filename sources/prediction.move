@@ -18,11 +18,15 @@ module betos::prediction {
     use pyth::i64;
     use pyth::price::{Self,Price};
 
-    // #[test_only]
-    // use std::debug;
+    #[test_only]
+    use std::debug;
 
-        // For the entire list of price_ids head to https://pyth.network/developers/price-feed-ids/#pyth-cross-chain-testnet
+    const INTERVAL_SECONDS: u64 = 300;
+
+    // For the entire list of price_ids head to https://pyth.network/developers/price-feed-ids/#pyth-cross-chain-testnet
     const APTOS_USD_PRICE_FEED_IDENTIFIER : vector<u8> = x"44a93dddd8effa54ea51076c4e851b6cbbfd938e82eb90197de38fe8876bb66e";
+    // mainnet
+    // const APTOS_USD_PRICE_FEED_IDENTIFIER : vector<u8> = x"44a93dddd8effa54ea51076c4e851b6cbbfd938e82eb90197de38fe8876bb66e";
 
     const ENO_OWNER: u64 = 0;
     const EBET_TOO_EARLY: u64 = 1;
@@ -92,10 +96,9 @@ module betos::prediction {
 
     public fun start_round(rounds: &mut vector<Round>, epoch: u64) {
         // TODO: change to 300
-        let interval_seconds = 300;
         let start_timestamp = timestamp::now_seconds();
-        let lock_timestamp = start_timestamp + interval_seconds;
-        let close_timestamp = start_timestamp + 2 * interval_seconds;
+        let lock_timestamp = start_timestamp + INTERVAL_SECONDS;
+        let close_timestamp = start_timestamp + 2 * INTERVAL_SECONDS;
 
         let new_round = Round {
             epoch: epoch,
@@ -255,12 +258,13 @@ module betos::prediction {
         bet(better, epoch, amount, false);
     }
 
+    // close_price != 0 check is done in the caller
     // refund when there is only one better
     fun claim(resource_signer: &signer, account_address: address, round: &Round, bet: &mut Bet) {
-        if(round.total_amount == bet.amount) {
+        // only one bet case
+        if (round.close round.total_amount == bet.amount) {
             coin::transfer<AptosCoin>(resource_signer, account_address, bet.amount);
             bet.claimed = true;
-            return
         };
 
         // TODO: handle the draw
@@ -404,27 +408,31 @@ module betos::prediction {
 
         // create a resource account from the origin account, mocking the module publishing process
         resource_account::create_resource_account(origin_account, vector::empty<u8>(), vector::empty<u8>());
+        let resource_addr = aptos_framework::account::create_resource_address(&user_addr, seed);
+        debug::print(&resource_addr);
+
         init_module(resource_account);
     }
 
-    #[test(creator = @0xa11ce, resource_account = @0x6c9df88bbf3864ff164ef4af37945100ba7f3c6e9a37e3ebc81320bbd4e79253, framework = @0x1)]
-    fun test_add_round(
+    #[test(creator = @0xcafe, resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5, framework = @0x1)]
+    fun test_genesis_start_round(
         creator: signer,
         resource_account: signer,
         framework: signer
-    ) acquires RoundContainer, Round {
+    ) acquires RoundContainer {
         set_up_test(&creator, &resource_account, framework);
 
         let now = timestamp::now_seconds();
-        let interval_seconds = 10;
-        let creator_addr = signer::address_of(&creator);
+        debug::print(&now); // 0
+        let resource_addr = signer::address_of(&resource_account);
 
-        add_round(&creator);
-        let round = borrow_global<Round>(creator_addr);
+        genesis_start_round(&creator);
+        let epoch = 1; // epoch starts from 1, because 0 means empty.
+        let (start_timestamp, lock_timestamp, close_timestamp, _, _) = get_round(epoch);
 
-        assert!(round.start_timestamp == now, 0);
-        assert!(round.lock_timestamp == now + interval_seconds, 0);
-        assert!(round.close_timestamp == now + 2 * interval_seconds, 0);
+        assert!(start_timestamp == now, 0);
+        assert!(lock_timestamp == now + 300, 0);
+        assert!(close_timestamp == now + 600, 0);
     }
 
 /*
