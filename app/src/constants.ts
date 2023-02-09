@@ -3,7 +3,7 @@ export const APT_USD_TESTNET_PRICE_ID =
 export const TESTNET_PRICE_SERVICE = "https://xc-testnet.pyth.network"
 
 export const BETOS_ADDRESS =
-  "0x14f814d7bb2f2abf35ef9921c9c78c009d78d85c76987f3160c28d96cabc8f61"
+  "0x57c21eeb2fd33f64acf8fb54e53783c04579cac5048adec5de00ea95119ebcd7"
 
 export const CLIENT_ENDPOINT = "https://fullnode.testnet.aptoslabs.com/v1"
 export const MODULE_NAME = "prediction"
