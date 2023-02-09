@@ -209,7 +209,6 @@ const Card: React.FC<CardProps> = ({
   const {
     token: { colorPrimaryText, colorTextSecondary, colorPrimary },
   } = theme.useToken()
-  const { client, account, address, modules } = useAptosModule()
   const [betMode, setBetMode] = useState<"up" | "down" | null>(null)
   const [betAmount, setBetAmount] = useState(0)
   const DEFUALT_BET_AMOUNT = 0.02
@@ -218,17 +217,8 @@ const Card: React.FC<CardProps> = ({
     setBetAmount(DEFUALT_BET_AMOUNT)
   }, [betMode])
 
-  const {
-    bearAmount,
-    bullAmount,
-    totalAmount,
-    closePrice,
-    closeTimestamp,
-    lockTimestamp,
-    startTimestamp,
-    lockPrice,
-    epoch,
-  } = round
+  const { bearAmount, bullAmount, totalAmount, closePrice, lockPrice, epoch } =
+    round
   const { amount, claimed, isBull } = betStatusOnCurrentRound || {}
   const isExpired = roundState === "expired"
   const isLive = roundState === "live"
@@ -322,9 +312,12 @@ const Card: React.FC<CardProps> = ({
       console.log("e", e)
     }
   }
-
   // milliseconds
   const currentTimestamp = Math.floor(Date.now())
+  if (isLive) {
+    console.log("round.closeTimestamp", round.closeTimestamp)
+    console.log("currentTimestamp", currentTimestamp)
+  }
 
   return (
     <CardWrapper mainColor={mainColor} isNext={isNext} isDisabled={isDisabled}>
@@ -333,10 +326,6 @@ const Card: React.FC<CardProps> = ({
         <span className="status">{title}</span>
         {isLive && (
           <PlusTimer
-            style={{
-              width: "100%",
-              marginLeft: "5px",
-            }}
             setDisabled={setDisabled}
             start={round.closeTimestamp - currentTimestamp}
             end={ROUND_STEP}

@@ -67,3 +67,5 @@ export const parseRound = (rawRound: RawRound): Round => {
     resultStatus,
   }
 }
+
+export const checkRoundClosed = (round: Round) => !!round.closePrice

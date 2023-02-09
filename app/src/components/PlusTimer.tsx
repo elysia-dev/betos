@@ -3,12 +3,12 @@ import React, { useEffect } from "react"
 import styled from "styled-components"
 import { ROUND_STEP } from "../constants"
 import usePlusCounter from "../hooks/usePlusCounter"
+import { Round } from "../types"
 type Props = {
   start: number
   end: number
   showProgress?: boolean
   setDisabled?: () => void
-  style?: any
 }
 
 const Wrapper = styled.div`
@@ -23,7 +23,6 @@ const PlusTimer: React.FC<Props> = ({
   end,
   showProgress,
   setDisabled,
-  style,
 }) => {
   console.log("start", start)
   console.log("end", end)
@@ -40,7 +39,12 @@ const PlusTimer: React.FC<Props> = ({
   }, [time])
 
   return (
-    <Wrapper className="timer" style={style}>
+    <Wrapper
+      className="timer"
+      style={{
+        width: "100%",
+        marginLeft: "5px",
+      }}>
       {showProgress ? (
         <Progress showInfo={false} percent={progress} />
       ) : (

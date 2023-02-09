@@ -4,7 +4,7 @@ import { Button, Card as AntdCard } from "antd"
 import PartyImage from "../assets/party.png"
 import { Types } from "aptos"
 import Card from "./Card"
-import { formatNumber } from "../utils"
+import { checkRoundClosed, formatNumber } from "../utils"
 import { BetStatus, Round } from "../types"
 import {
   BETOS_ADDRESS,
@@ -12,42 +12,9 @@ import {
   PRIMARY_TEXT_COLOR,
   SECONDARY_COLOR,
 } from "../constants"
+import MyBets from "./MyBets"
 
-const Wrapper = styled.div`
-  div.my-bets {
-    width: 100%;
-    margin-top: 50px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-  }
-
-  div.details {
-    margin: auto;
-    width: 60%;
-    margin-top: 50px;
-
-    display: flex;
-    flex-direction: row;
-    justify-content: space-around;
-
-    div.epoch-summary {
-      display: flex;
-      flex-direction: column;
-      font-size: 20px;
-    }
-  }
-`
-
-const CardWrapper = styled(AntdCard)`
-  div.row {
-    display: flex;
-    div:last-child {
-      margin-left: 5px;
-    }
-  }
-`
+const Wrapper = styled.div``
 
 const Descriptions = styled.section`
   text-align: center;
@@ -127,8 +94,6 @@ const Home: React.FC<Props> = ({
     const response = await window.aptos.signAndSubmitTransaction(transaction)
   }
 
-  const checkRoundClosed = (round: Round) => !!round.closePrice
-
   const claimableAmounts = (function () {
     if (!myEpochs) {
       return 0
@@ -184,87 +149,13 @@ const Home: React.FC<Props> = ({
           Claim
         </ClaimButton>
       </Descriptions>
-      <div className="my-bets">
-        <h4> My bets</h4>
-        <div className="details">
-          {myEpochs?.map((myEpoch, index) => {
-            const { amount, claimed, epoch, isBull } = myEpoch
-            const isCurrentEpoch = epoch === Number(currentEpoch)
-            const round = getRoundByEpoch(epoch)
-            if (!round) return null
-            const { resultStatus } = round
-            const isClosedRound = checkRoundClosed(round)
-            const isWin = (function () {
-              if (resultStatus === "up") return isBull
-              if (resultStatus === "down") return !isBull
-              else return false
-            })()
-            const state =
-              !isClosedRound || isCurrentEpoch
-                ? "PENDING"
-                : isWin
-                ? "WIN"
-                : "FAIL"
-            return (
-              <CardWrapper
-                key={index}
-                title={`#${epoch}`}
-                extra={
-                  <div>
-                    <div
-                      style={{
-                        color: isWin ? "green" : "red",
-                      }}>
-                      {state}
-                    </div>
-                    <div
-                      style={{
-                        color: claimed ? "green" : "red",
-                      }}>
-                      {claimed ? "CLAIMED" : "UN-CLAIMED"}
-                    </div>
-                  </div>
-                }
-                style={{ width: 300 }}>
-                <div className="row">
-                  <div className="first">Bet</div>
-                  <div>
-                    <span
-                      style={{
-                        color: isBull ? PRIMARY_TEXT_COLOR : SECONDARY_COLOR,
-                        margin: "0 2px",
-                      }}>
-                      {isBull ? "UP" : "DOWN"}
-                    </span>
-                    with
-                    <span
-                      style={{
-                        color: PRIMARY_TEXT_COLOR,
-                        margin: "0 2px",
-                      }}>
-                      {amount}
-                    </span>
-                    APT
-                  </div>
-                </div>
 
-                <div className="row">
-                  <div className="first">Round Closed With </div>
-                  <div
-                    style={{
-                      color:
-                        resultStatus === "up"
-                          ? PRIMARY_TEXT_COLOR
-                          : SECONDARY_COLOR,
-                    }}>
-                    {resultStatus.toUpperCase()}
-                  </div>
-                </div>
-              </CardWrapper>
-            )
-          })}
-        </div>
-      </div>
+      <MyBets
+        myEpochs={myEpochs}
+        currentEpoch={currentEpoch}
+        getRoundByEpoch={getRoundByEpoch}
+      />
+
       <Board>
         {totalRounds.map((round: Round, index) => {
           const { epoch } = round

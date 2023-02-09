@@ -1,7 +1,7 @@
 import { compact, map } from "lodash"
 
 import React, { useEffect, useMemo, useState } from "react"
-import { Table, Tag } from "antd"
+import { Button, Table, Tag, Typography } from "antd"
 import { Types } from "aptos"
 import useAptosModule from "../useAptosModule"
 import { formatNumber, parseBetStatus, parseRound } from "../utils"
@@ -14,8 +14,11 @@ import {
 } from "../constants"
 
 import type { ColumnsType } from "antd/es/table"
+import styled from "styled-components"
 
-interface DataType {
+const { Title } = Typography
+
+interface BetRecord {
   key: string
   round: string
   state: string
@@ -26,7 +29,32 @@ interface DataType {
   total: number
 }
 
-const columns: ColumnsType<DataType> = [
+const Wrapper = styled.div`
+  margin-top: 50px;
+  padding: 100px;
+
+  table {
+    background-color: #000000;
+    thead {
+      th {
+        background-color: black !important;
+      }
+    }
+    tr.claimable {
+      background-color: blue;
+    }
+  }
+`
+
+const Header = styled.div`
+  display: flex;
+  button {
+    margin-left: 20px;
+  }
+  margin-bottom: 20px;
+`
+
+const columnData: ColumnsType<BetRecord> = [
   {
     title: "Round",
     dataIndex: "round",
@@ -79,6 +107,16 @@ const columns: ColumnsType<DataType> = [
     key: "total",
   },
 ]
+
+const columns: ColumnsType<BetRecord> = columnData.map((col) => {
+  return { ...col, align: "center" }
+})
+
+const checkClaimable = (betRecord: BetRecord) => {
+  const { claimed, total, state, round, isBull, key } = betRecord
+  const isAble = !claimed && state === "WIN"
+  return isAble
+}
 
 // expired: 결과까지 끝남
 // live: bet은 끝났고 5분뒤에 결과 나옴, 오직1개
@@ -243,7 +281,7 @@ const Claim: React.FC = () => {
       }
     })
   }, [myEpochs])
-  const compactedTableData: DataType[] = compact(tableData)
+  const compactedTableData: BetRecord[] = compact(tableData)
 
   const claimableAmounts = (function () {
     if (!myEpochs) {
@@ -283,10 +321,33 @@ const Claim: React.FC = () => {
     return formatNumber(sum, 10)
   })()
   return (
-    <div>
-      <Table columns={columns} dataSource={compactedTableData} />
-      <div>TotalSum : {claimableAmounts} APT</div>
-    </div>
+    <Wrapper>
+      <Header>
+        <Title level={4}>Claimable Amounts : {claimableAmounts} APT</Title>
+        <Button>Claim</Button>
+      </Header>
+
+      <Table
+        onHeaderRow={(column, index) => {
+          return {
+            className: "header coo",
+          }
+        }}
+        onRow={(record, rowIndex) => {
+          console.log("record", record)
+          const isClaimable = checkClaimable(record)
+          console.log("isClaimable", isClaimable)
+          if (isClaimable) {
+            return {
+              className: "claimable",
+            }
+          }
+          return {}
+        }}
+        columns={columns}
+        dataSource={compactedTableData}
+      />
+    </Wrapper>
   )
 }
 
