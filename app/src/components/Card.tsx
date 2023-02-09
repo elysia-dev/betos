@@ -265,9 +265,7 @@ const Card: React.FC<CardProps> = ({
       return closePrice > lockPrice
     }
     if (roundState === "live") {
-      // TODO: 수정
-      // lockPrice 보다 현재 가격이 높으면 true
-      return true
+      return currentAptosPrice > lockPrice
     }
     return false
   })()
