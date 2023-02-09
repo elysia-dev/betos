@@ -15,4 +15,4 @@ const FIVE_MINUTES = 5 * 60 * 1000
 const TEN_MINUTES = 10 * 60 * 1000
 const ONE_HOUR = 60 * 60 * 1000
 
-export const ROUND_STEP = FIVE_MINUTES
+export const ROUND_STEP = ONE_HOUR
