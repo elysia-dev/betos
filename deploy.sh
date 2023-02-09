@@ -1,7 +1,7 @@
 #!/bin/bash
 
 aptos move create-resource-account-and-publish-package \
---seed 3244 --address-name betos --named-addresses admin=test2 \
+--seed 4249 --address-name betos --named-addresses admin=test2 \
 --profile test2 --skip-fetch-latest-git-deps
 
 # TODO: export BETOS_ADDRESS=

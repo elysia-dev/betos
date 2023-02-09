@@ -11,7 +11,7 @@ provider:
   region: ap-northeast-2
   environment:
     APTOS_KEY: ${ssm:/betos/test/aptos_key}
-    BETOS_ADDRESS: "0x14f814d7bb2f2abf35ef9921c9c78c009d78d85c76987f3160c28d96cabc8f61"
+    BETOS_ADDRESS: "0x57c21eeb2fd33f64acf8fb54e53783c04579cac5048adec5de00ea95119ebcd7"
 
 functions:
   rateHandler:

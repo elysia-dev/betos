@@ -18,11 +18,15 @@ module betos::prediction {
     use pyth::i64;
     use pyth::price::{Self,Price};
 
-    // #[test_only]
-    // use std::debug;
+    #[test_only]
+    use std::debug;
 
-        // For the entire list of price_ids head to https://pyth.network/developers/price-feed-ids/#pyth-cross-chain-testnet
+    const INTERVAL_SECONDS: u64 = 3600; // 1 hour
+
+    // For the entire list of price_ids head to https://pyth.network/developers/price-feed-ids/#pyth-cross-chain-testnet
     const APTOS_USD_PRICE_FEED_IDENTIFIER : vector<u8> = x"44a93dddd8effa54ea51076c4e851b6cbbfd938e82eb90197de38fe8876bb66e";
+    // mainnet
+    // const APTOS_USD_PRICE_FEED_IDENTIFIER : vector<u8> = x"03ae4db29ed4ae33d323568895aa00337e658e348b37509f5372ae51f0af00d5";
 
     const ENO_OWNER: u64 = 0;
     const EBET_TOO_EARLY: u64 = 1;
@@ -44,6 +48,8 @@ module betos::prediction {
         signer_cap: SignerCapability,
         rounds: vector<Round>, // index is called as `epoch`
         current_epoch: u64,
+        paused: bool,
+        last_paused_epoch: u64,
     }
 
     struct Round has key, store {
@@ -78,7 +84,9 @@ module betos::prediction {
         let round_container = RoundContainer {
             signer_cap: resource_signer_cap,
             rounds: vector::empty<Round>(),
-            current_epoch: 0
+            current_epoch: 0,
+            paused: false,
+            last_paused_epoch: 0,
         };
 
         let events = Events {
@@ -90,12 +98,31 @@ module betos::prediction {
         move_to<Events>(account, events);
     }
 
+    // onlyOwner
+    // When paused, no one can bet and start a round, but claim is still allowed,
+    // and ongoing rounds can still be executed.
+    public entry fun pause(account: &signer) acquires RoundContainer {
+        let account_address = signer::address_of(account);
+        assert!(account_address == @admin, ENO_OWNER);
+
+        let round_container = borrow_global_mut<RoundContainer>(@betos);
+        round_container.paused = true;
+        round_container.last_paused_epoch = round_container.current_epoch;
+    }
+
+    // onlyOwner
+    public entry fun unpause(account: &signer) acquires RoundContainer {
+        let account_address = signer::address_of(account);
+        assert!(account_address == @admin, ENO_OWNER);
+
+        let round_container = borrow_global_mut<RoundContainer>(@betos);
+        round_container.paused = false;
+    }
+
     public fun start_round(rounds: &mut vector<Round>, epoch: u64) {
-        // TODO: change to 300
-        let interval_seconds = 300;
         let start_timestamp = timestamp::now_seconds();
-        let lock_timestamp = start_timestamp + interval_seconds;
-        let close_timestamp = start_timestamp + 2 * interval_seconds;
+        let lock_timestamp = start_timestamp + INTERVAL_SECONDS;
+        let close_timestamp = start_timestamp + 2 * INTERVAL_SECONDS;
 
         let new_round = Round {
             epoch: epoch,
@@ -127,29 +154,72 @@ module betos::prediction {
         round.close_price = price;
     }
 
-    // TODO: rename to execute_round
     // onlyOwner
     public entry fun execute_round(account: &signer, pyth_update_data: vector<vector<u8>>) acquires RoundContainer {
         let account_address = signer::address_of(account);
         assert!(account_address == @admin, ENO_OWNER);
         let round_container = borrow_global_mut<RoundContainer>(@betos);
-        // let resource_signer = account::create_signer_with_capability(&round_container.signer_cap);
+        let last_paused_epoch = round_container.last_paused_epoch;
+        let current_epoch = round_container.current_epoch;
+        let paused = round_container.paused;
+        let total_rounds = vector::length(&round_container.rounds);
 
-        assert!(vector::length(&round_container.rounds) >= 2, EEXECUTE_ROUNDS_LENGTH);
-
-        // 1. get oracle price
+        // get oracle price
         let price = update_and_fetch_price(account, pyth_update_data);
         let price_positive = i64::get_magnitude_if_positive(&price::get_price(&price)); // This will fail if the price is negative
+
+        if (paused) {
+            if (total_rounds >= 2) {
+                // close the prev epoch & lock the currrent epoch
+                // vector index should be decremented by 1. e.g. epoch 1 -> index 0
+                let prev_round = vector::borrow_mut<Round>(&mut round_container.rounds, current_epoch - 2);
+                if (prev_round.close_price == 0) {
+                    safe_close_round(prev_round, price_positive);
+
+                    let current_round = vector::borrow_mut<Round>(&mut round_container.rounds, current_epoch - 1);
+                    safe_lock_round(current_round, price_positive);
+                };
+            } else if (last_paused_epoch == current_epoch) {
+                let current_round = vector::borrow_mut<Round>(&mut round_container.rounds, current_epoch - 1);
+
+                // Case 1: 1 round not locked
+                if (current_round.lock_price == 0) {
+                    safe_lock_round(current_round, price_positive);
+                // Case 2: 1 round lock but not closed
+                } else if (current_round.close_price == 0) {
+                    safe_close_round(current_round, price_positive);
+                };
+            };
+        } else {
+            if (last_paused_epoch == current_epoch) {
+                genesis_start_round(account);
+            } else if (last_paused_epoch + 1 == current_epoch) {
+                genesis_lock_round(account, price_positive);
+            } else {
+                internal_execute_round(account, price_positive);
+            };
+        };
+    }
+
+    // onlyOwner
+    public fun internal_execute_round(account: &signer, price: u64) acquires RoundContainer {
+        let account_address = signer::address_of(account);
+        assert!(account_address == @admin, ENO_OWNER);
+        let round_container = borrow_global_mut<RoundContainer>(@betos);
+        let last_paused_epoch = round_container.last_paused_epoch;
+        let current_epoch = round_container.current_epoch;
+
+        assert!(last_paused_epoch + 1 < current_epoch, EEXECUTE_ROUNDS_LENGTH);
 
         // 2. close epoch - 1
         // vector index should be decremented by 1. e.g. epoch 1 -> index 0
         let current_epoch = round_container.current_epoch;
         let prev_round = vector::borrow_mut<Round>(&mut round_container.rounds, current_epoch - 2);
-        safe_close_round(prev_round, price_positive);
+        safe_close_round(prev_round, price);
 
         // 3. lock epoch
         let current_round = vector::borrow_mut<Round>(&mut round_container.rounds, current_epoch - 1);
-        safe_lock_round(current_round, price_positive);
+        safe_lock_round(current_round, price);
 
         // 4. start epoch
         safe_start_round(&mut round_container.rounds, current_epoch + 1);
@@ -159,24 +229,21 @@ module betos::prediction {
 
     // onlyOwner
     // lock -> start
-    public entry fun genesis_lock_round(account: &signer, pyth_update_data: vector<vector<u8>>) acquires RoundContainer {
+    public fun genesis_lock_round(account: &signer, price: u64) acquires RoundContainer {
         let account_address = signer::address_of(account);
         assert!(account_address == @admin, ENO_OWNER);
         let round_container = borrow_global_mut<RoundContainer>(@betos);
-        // let resource_signer = account::create_signer_with_capability(&round_container.signer_cap);
+        let last_paused_epoch = round_container.last_paused_epoch;
+        let current_epoch = round_container.current_epoch;
 
-        assert!(vector::length(&round_container.rounds) == 1, EGENESIS_LOCK);
-
-        // 1. get oracle price
-        let price = update_and_fetch_price(account, pyth_update_data);
-        let price_positive = i64::get_magnitude_if_positive(&price::get_price(&price)); // This will fail if the price is negative
+        assert!(last_paused_epoch + 1 == current_epoch, EGENESIS_LOCK);
 
         let current_epoch = round_container.current_epoch;
 
         // 3. lock epoch
         // vector index should be decremented by 1. e.g. epoch 1 -> index 0
         let current_round = vector::borrow_mut<Round>(&mut round_container.rounds, current_epoch - 1);
-        safe_lock_round(current_round, price_positive);
+        safe_lock_round(current_round, price);
 
         // 4. start epoch
         safe_start_round(&mut round_container.rounds, current_epoch + 1);
@@ -186,13 +253,14 @@ module betos::prediction {
 
     // onlyOwner
     // start
-    public entry fun genesis_start_round(account: &signer) acquires RoundContainer {
+    public fun genesis_start_round(account: &signer) acquires RoundContainer {
         let account_address = signer::address_of(account);
         assert!(account_address == @admin, ENO_OWNER);
         let round_container = borrow_global_mut<RoundContainer>(@betos);
-        // let resource_signer = account::create_signer_with_capability(&round_container.signer_cap);
+        let last_paused_epoch = round_container.last_paused_epoch;
+        let current_epoch = round_container.current_epoch;
 
-        assert!(vector::length(&round_container.rounds) == 0, EGENESIS_START);
+        assert!(last_paused_epoch == current_epoch, EGENESIS_START);
 
         let current_epoch = round_container.current_epoch;
 
@@ -256,7 +324,15 @@ module betos::prediction {
         bet(better, epoch, amount, false);
     }
 
+    // close_price != 0 check is done in the caller
+    // refund when there is only one better
     fun claim(resource_signer: &signer, account_address: address, round: &Round, bet: &mut Bet) {
+        // allow to claim when only one bet exists in a closed round
+        if (round.close_price != 0 && round.total_amount == bet.amount) {
+            coin::transfer<AptosCoin>(resource_signer, account_address, bet.amount);
+            bet.claimed = true;
+        };
+
         // TODO: handle the draw
         if (round.lock_price <= round.close_price && bet.is_bull) {
             let prize = (bet.amount * round.total_amount) / round.bull_amount;
@@ -307,49 +383,6 @@ module betos::prediction {
         };
     }
 
-    // Not necessary
-    /*
-    public entry fun set_close_price_by_oracle(account: &signer, epoch: u64, pyth_update_data: vector<vector<u8>>) acquires Events, RoundContainer {
-        let price = update_and_fetch_price(account, pyth_update_data);
-
-        let price_positive = i64::get_magnitude_if_positive(&price::get_price(&price)); // This will fail if the price is negative
-        // let expo_magnitude = i64::get_magnitude_if_negative(&price::get_expo(&price)); // This will fail if the exponent is positive
-        // let price_in_aptos_coin =  (OCTAS_PER_APTOS * pow(10, expo_magnitude)) / price_positive; // 1 USD in APT
-
-        let events = borrow_global_mut<Events>(@betos);
-        event::emit_event<UpdatePriceEvent>(
-            &mut events.update_price_events,
-            UpdatePriceEvent {
-                price
-            }
-        );
-
-        let round_container = borrow_global_mut<RoundContainer>(@betos);
-        let round = vector::borrow_mut<Round>(&mut round_container.rounds, epoch);
-        round.close_price = price_positive;
-    }
-
-    public entry fun set_lock_price(account: &signer, epoch: u64, price: u64) acquires RoundContainer {
-        // check onlyOwner
-        let account_address = signer::address_of(account);
-        assert!(account_address == @admin, ENO_OWNER);
-
-        let round_container = borrow_global_mut<RoundContainer>(@betos);
-        let round = vector::borrow_mut<Round>(&mut round_container.rounds, epoch);
-        round.lock_price = price
-    }
-
-    public entry fun set_close_price(account: &signer, epoch: u64, price: u64) acquires RoundContainer {
-        // check onlyOwner
-        let account_address = signer::address_of(account);
-        assert!(account_address == @admin, ENO_OWNER);
-
-        let round_container = borrow_global_mut<RoundContainer>(@betos);
-        let round = vector::borrow_mut<Round>(&mut round_container.rounds, epoch);
-        round.close_price = price
-    }
-    */
-
     fun update_and_fetch_price(account: &signer, pyth_update_data: vector<vector<u8>>): Price {
         // First update the Pyth price feeds. The user pays the fee for the update.
         let coins = coin::withdraw<AptosCoin>(account, pyth::get_update_fee(&pyth_update_data));
@@ -398,27 +431,31 @@ module betos::prediction {
 
         // create a resource account from the origin account, mocking the module publishing process
         resource_account::create_resource_account(origin_account, vector::empty<u8>(), vector::empty<u8>());
+        let resource_addr = aptos_framework::account::create_resource_address(&user_addr, seed);
+        debug::print(&resource_addr);
+
         init_module(resource_account);
     }
 
-    #[test(creator = @0xa11ce, resource_account = @0x6c9df88bbf3864ff164ef4af37945100ba7f3c6e9a37e3ebc81320bbd4e79253, framework = @0x1)]
-    fun test_add_round(
+    #[test(creator = @0xcafe, resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5, framework = @0x1)]
+    fun test_genesis_start_round(
         creator: signer,
         resource_account: signer,
         framework: signer
-    ) acquires RoundContainer, Round {
+    ) acquires RoundContainer {
         set_up_test(&creator, &resource_account, framework);
 
         let now = timestamp::now_seconds();
-        let interval_seconds = 10;
-        let creator_addr = signer::address_of(&creator);
+        debug::print(&now); // 0
+        let resource_addr = signer::address_of(&resource_account);
 
-        add_round(&creator);
-        let round = borrow_global<Round>(creator_addr);
+        genesis_start_round(&creator);
+        let epoch = 1; // epoch starts from 1, because 0 means empty.
+        let (start_timestamp, lock_timestamp, close_timestamp, _, _) = get_round(epoch);
 
-        assert!(round.start_timestamp == now, 0);
-        assert!(round.lock_timestamp == now + interval_seconds, 0);
-        assert!(round.close_timestamp == now + 2 * interval_seconds, 0);
+        assert!(start_timestamp == now, 0);
+        assert!(lock_timestamp == now + 300, 0);
+        assert!(close_timestamp == now + 600, 0);
     }
 
 /*
