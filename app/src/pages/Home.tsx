@@ -1,10 +1,12 @@
-import React, { useContext } from "react"
+import React, { useContext, useEffect, useState } from "react"
 import Home from "../components/Home"
 import usePyth from "../usePyth"
 import ContractContext from "../ContractContext"
 
 const HomeComponent: React.FC = () => {
+  const [currentAptosPrice, setCurrentAptosPrice] = useState(0)
   const contractContext = useContext(ContractContext)
+  const { pythOffChainPrice } = usePyth()
   const {
     betosResources,
     totalRounds,
@@ -17,8 +19,11 @@ const HomeComponent: React.FC = () => {
     myEpochs,
   } = contractContext
 
-  const { pythOffChainPrice } = usePyth()
-  const currentAptosPrice = pythOffChainPrice?.getPriceAsNumberUnchecked() || 0
+  useEffect(() => {
+    const currentAptosPrice =
+      pythOffChainPrice?.getPriceAsNumberUnchecked() || 0
+    setCurrentAptosPrice(currentAptosPrice)
+  }, [])
 
   // TODO: key를 epoch로 하게 해서 개선하기, 이거대로면 매번 round 배열을 순회해야함
   const getRoundByEpoch = (epoch: number) =>

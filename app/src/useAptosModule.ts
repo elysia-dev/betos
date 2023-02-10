@@ -20,6 +20,7 @@ const useAptosModule = () => {
   }
 
   const client = new AptosClient(endpoint[network])
+
   // Check for the module; show publish instructions if not present.
   const [modules, setModules] = React.useState<Types.MoveModuleBytecode[]>([])
 

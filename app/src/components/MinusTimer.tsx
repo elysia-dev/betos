@@ -26,7 +26,7 @@ const MinusTimer: React.FC<Props> = ({
   if (start < 0) {
     return (
       <Wrapper style={style} className="timer">
-        finished
+        -
       </Wrapper>
     )
   }
