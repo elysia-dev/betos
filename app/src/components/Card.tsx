@@ -339,6 +339,8 @@ const Card: React.FC<CardProps> = ({
   const DEFUALT_BET_AMOUNT = 0.02
   const { network } = useAptosModule()
 
+  const { fetchBetStatusOfCurrentUser } = useContext(ContractContext)
+
   useEffect(() => {
     setBetAmount(DEFUALT_BET_AMOUNT)
   }, [betMode])
@@ -431,8 +433,8 @@ const Card: React.FC<CardProps> = ({
     console.log("transaction", transaction)
 
     try {
-      const response = await window.aptos.signAndSubmitTransaction(transaction)
-      console.log("response", response)
+      await window.aptos.signAndSubmitTransaction(transaction)
+      await fetchBetStatusOfCurrentUser()
     } catch (e: any) {
       console.log("!!!!!!!!!!!!!!!!erorr in bet!!!!!!!!!!!!!!!!!!")
       console.log("e", e)

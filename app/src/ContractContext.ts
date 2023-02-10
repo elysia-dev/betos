@@ -11,6 +11,7 @@ type IContractContext = {
 
   accountResources: Types.MoveResource[]
   betStatusOnCurrentRound?: BetStatus
+  fetchBetStatusOfCurrentUser?: any
   myEpochs?: BetStatus[]
 }
 

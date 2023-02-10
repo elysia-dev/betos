@@ -68,6 +68,7 @@ type Props = {
   accountResources: Types.MoveResource[]
   getRoundByEpoch: any
   currentRound?: Round
+  parsedRounds: Round[]
   totalRounds: Round[]
   currentEpoch: number
   betStatusOnCurrentRound?: BetStatus
@@ -77,6 +78,7 @@ type Props = {
 
 const Home: React.FC<Props> = ({
   getRoundByEpoch,
+  parsedRounds,
   totalRounds,
   currentEpoch,
   betStatusOnCurrentRound,
@@ -87,7 +89,7 @@ const Home: React.FC<Props> = ({
   const [showDevInfo, setShowDevInfo] = useState(false)
 
   const claimableAmounts = (function () {
-    if (!myEpochs) {
+    if (!myEpochs || parsedRounds.length === 0) {
       return 0
     }
 

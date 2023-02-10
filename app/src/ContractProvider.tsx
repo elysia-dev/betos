@@ -121,10 +121,7 @@ const ContractProvider: React.FC<PropsWithChildren> = ({ children }) => {
     (r) => r?.type === RESOURCE_KEY_BET,
   ) as undefined | { data: { bets: { handle: string }; epochs: string[] } }
 
-  const handleOfBetContainer = useMemo(
-    () => betResource?.data?.bets?.handle,
-    [accountResources],
-  )
+  const handleOfBetContainer = betResource?.data?.bets?.handle
 
   const epochsOfBetContainer = useMemo(
     () => map(betResource?.data?.epochs, (e) => Number(e)),
@@ -146,19 +143,20 @@ const ContractProvider: React.FC<PropsWithChildren> = ({ children }) => {
   ) => await client.getTableItem(handleOfBetContainer, tableItemRequest)
 
   // current round의 bet status 를 fetch
-  useEffect(() => {
+  const fetchBetStatusOfCurrentUser = async () => {
     if (!handleOfBetContainer) return
-    const fetch = async () => {
-      const tableItemRequest = getTableItemRequest(currentEpoch)
-      const rawBetStatus = await fetchBetStatus(
-        handleOfBetContainer,
-        tableItemRequest,
-      )
-      if (!rawBetStatus) return
-      setBetStatusOnCurrentRound(parseBetStatus(rawBetStatus))
-    }
-    fetch()
-  }, [handleOfBetContainer])
+    const tableItemRequest = getTableItemRequest(currentEpoch)
+    const rawBetStatus = await fetchBetStatus(
+      handleOfBetContainer,
+      tableItemRequest,
+    )
+    if (!rawBetStatus) return
+    setBetStatusOnCurrentRound(parseBetStatus(rawBetStatus))
+  }
+
+  useEffect(() => {
+    fetchBetStatusOfCurrentUser()
+  }, [handleOfBetContainer, currentEpoch])
 
   useEffect(() => {
     const fetch = async () => {
@@ -195,6 +193,7 @@ const ContractProvider: React.FC<PropsWithChildren> = ({ children }) => {
         accountResources: accountResources,
         betStatusOnCurrentRound: betStatusOnCurrentRound,
         myEpochs: myEpochs,
+        fetchBetStatusOfCurrentUser,
       }}>
       {children}
     </ContractContext.Provider>
