@@ -10,7 +10,7 @@ const useAptosModule = () => {
   // Retrieve aptos.account on initial render and store it.
   const [address, setAddress] = React.useState<string | null>(null)
   const [account, setAccount] = React.useState<Types.AccountData | null>(null)
-  const [network, setNetwork] = React.useState<"Testnet" | "Mainnet">("Testnet")
+  const [network, setNetwork] = React.useState<"Testnet" | "Mainnet">("Mainnet")
   const betosAddressByNetwork = betosAddress[network]
 
   const navigate = useNavigate()
