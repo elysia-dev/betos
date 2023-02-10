@@ -1,5 +1,7 @@
 export const APT_USD_TESTNET_PRICE_ID =
   "44a93dddd8effa54ea51076c4e851b6cbbfd938e82eb90197de38fe8876bb66e"
+export const APT_USD_MAINNET_PRICE_ID =
+  "03ae4db29ed4ae33d323568895aa00337e658e348b37509f5372ae51f0af00d5"
 export const TESTNET_PRICE_SERVICE = "https://xc-testnet.pyth.network"
 
 export const BETOS_ADDRESS =

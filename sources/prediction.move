@@ -24,9 +24,8 @@ module betos::prediction {
     const INTERVAL_SECONDS: u64 = 3600; // 1 hour
 
     // For the entire list of price_ids head to https://pyth.network/developers/price-feed-ids/#pyth-cross-chain-testnet
-    const APTOS_USD_PRICE_FEED_IDENTIFIER : vector<u8> = x"44a93dddd8effa54ea51076c4e851b6cbbfd938e82eb90197de38fe8876bb66e";
-    // mainnet
-    // const APTOS_USD_PRICE_FEED_IDENTIFIER : vector<u8> = x"03ae4db29ed4ae33d323568895aa00337e658e348b37509f5372ae51f0af00d5";
+    const APT_USD_TESTNET_PRICE_ID : vector<u8> = x"44a93dddd8effa54ea51076c4e851b6cbbfd938e82eb90197de38fe8876bb66e";
+    const APT_USD_MAINNET_PRICE_ID : vector<u8> = x"03ae4db29ed4ae33d323568895aa00337e658e348b37509f5372ae51f0af00d5";
 
     const ENO_OWNER: u64 = 0;
     const EBET_TOO_EARLY: u64 = 1;
@@ -390,7 +389,17 @@ module betos::prediction {
         pyth::update_price_feeds(pyth_update_data, coins);
 
         // Now we can use the prices which we have just updated
-        pyth::get_price(price_identifier::from_byte_vec(APTOS_USD_PRICE_FEED_IDENTIFIER)) // Get recent price (will fail if price is too old)
+        let price_id = get_price_id();
+        pyth::get_price(price_identifier::from_byte_vec(price_id)) // Get recent price (will fail if price is too old)
+    }
+
+    fun get_price_id(): vector<u8> {
+        let ret = APT_USD_TESTNET_PRICE_ID;
+        if (aptos_framework::chain_id::get() == 1) {
+            ret = APT_USD_MAINNET_PRICE_ID;
+        };
+
+        return ret
     }
 
     #[test(creator = @0xa11ce, framework = @0x1)]
@@ -420,6 +429,15 @@ module betos::prediction {
 
     fun test_claim_draw() {
 
+    }
+
+    #[test(framework = @0x1)]
+    fun test_get_price_id(
+        framework: &signer,
+    ) {
+        aptos_framework::chain_id::initialize_for_test(framework, 1);
+        let price_id: vector<u8> = get_price_id();
+        assert!(price_id == APT_USD_MAINNET_PRICE_ID, 0);
     }
 
     #[test_only]
