@@ -1,6 +1,6 @@
 import React, { useState } from "react"
 import styled from "styled-components"
-import { Button } from "antd"
+import { Button, Tag } from "antd"
 import PartyImage from "../assets/party.png"
 import { Types } from "aptos"
 import Card from "./Card"
@@ -128,10 +128,18 @@ const Home: React.FC<Props> = ({
   }
   return (
     <Wrapper>
-      <Button onClick={() => setShowDevInfo((s) => !s)}>Show dev info</Button>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          paddingRight: "20px",
+        }}>
+        <Button onClick={() => setShowDevInfo((s) => !s)}>Show dev info</Button>
+        <Tag color={network === "Mainnet" ? "volcano" : "green"}>{network}</Tag>
+      </div>
       {showDevInfo && (
         <div>
-          <div>Current Network: {network}</div>
           <div>My address: {address}</div>
           <div>Bettos address: {betosAddress[network]}</div>
           <div>currentEpoch: {currentEpoch}</div>
