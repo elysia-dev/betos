@@ -194,8 +194,7 @@ const Home: React.FC<Props> = ({
                 currentAptosPrice={currentAptosPrice}
               />
             )
-          }
-          if (roundState === "next") {
+          } else if (roundState === "next") {
             return (
               <NextCardWrapper key={index}>
                 <div className="timer-wrapper">

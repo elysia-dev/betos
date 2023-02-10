@@ -23,16 +23,9 @@ const ClaimPage = (props: any) => {
 
   return (
     <Claim
-      // totalRounds={totalRounds}
-      // betosResources={betosResources}
-      // accountResources={accountResources}
       getRoundByEpoch={getRoundByEpoch}
-      // currentRound={currentRound}
       currentEpoch={currentEpoch}
-      // betStatusOnCurrentRound={betStatusOnCurrentRound}
       myEpochs={myEpochs}
-      // address={address}
-      // currentAptosPrice={currentAptosPrice}
     />
   )
 }
