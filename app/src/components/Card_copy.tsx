@@ -3,20 +3,13 @@ import { Button, InputNumber, theme } from "antd"
 import { gray } from "@ant-design/colors"
 import { useEffect, useState, useRef } from "react"
 import { RoundState } from "./Home"
-import Clock from "../assets/clock.png"
-import Ban from "../assets/ban.png"
-import Play from "../assets/play.png"
-import ArrowUp from "../assets/arrow-up.png"
-import ArrowUpSVG from "../assets/arrow-up.svg"
-import ArrowDown from "../assets/arrow-down.png"
-import ArrowUpBlack from "../assets/arrow-up-black.png"
-import ArrowDownBlack from "../assets/arrow-down-black.png"
+import ClockImage from "../assets/clock.png"
 
 import { formatNumber, numberToApt } from "../utils"
 import useAptosModule from "../useAptosModule"
 import { BetStatus, Round } from "../types"
 import {
-  betosAddress,
+  // BETOS_ADDRESS,
   MODULE_NAME,
   PRIMARY_TEXT_COLOR,
   ROUND_STEP,
@@ -26,16 +19,17 @@ import MinusTimer from "./MinusTimer"
 import PlusTimer from "./PlusTimer"
 
 const CardWrapper = styled.div<{
+  mainColor: string
   isNext?: boolean
   isDisabled?: boolean
 }>`
-  width: 323px;
-  height: 396px;
+  width: 320px;
+  height: 240px;
 
   background: rgba(20, 22, 21, 0.8);
   border-radius: 15px;
   margin: 10px;
-  border: 1px solid #383a38;
+  border: 1px solid ${(props) => props.mainColor};
   ${(props) =>
     props.isNext &&
     `
@@ -48,22 +42,16 @@ const CardWrapper = styled.div<{
 
 `}
 `
-const Header = styled.div`
-  color: white;
+const Header = styled.div<{ mainColor: string }>`
+  background: ${(props) => props.mainColor};
   border-radius: 14px 14px 0 0;
 
   height: 30px;
   display: flex;
   align-items: center;
   padding-left: 10px;
-  justify-content: space-between;
-  padding-right: 20px;
 
-  div {
-    display: flex;
-    align-items: center;
-  }
-
+  color: black;
   span.status {
     margin-left: 5px;
     font-weight: 700;
@@ -73,18 +61,9 @@ const Header = styled.div`
 const Contents = styled.div<{ mainColor: string }>`
   padding: 20px;
   div.summary {
-    margin-top: 5px;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-
-    // div.price {
-    //   color: ${(props) => props.mainColor};
-    //   height: 100%;
-
-    //   display: flex;
-    //   align-items: center;
-    // }
 
     color: ${(props) => props.mainColor};
     > div {
@@ -94,10 +73,72 @@ const Contents = styled.div<{ mainColor: string }>`
       align-items: center;
       justify-content: space-between;
 
+      > div.price {
+        color: ${(props) => props.mainColor};
+        height: 100%;
+
+        display: flex;
+        align-items: center;
+      }
+
+      > div.diff {
+        height: 100%;
+        width: 90px;
+        background-color: ${(props) => props.mainColor};
+        border-radius: 8px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: 700;
+        color: black;
+        font-size: 15px;
+      }
+
+      button {
+        width: 40%;
+        &.up {
+          color: ${PRIMARY_TEXT_COLOR};
+          &:hover {
+            border-color: ${PRIMARY_TEXT_COLOR};
+          }
+        }
+        &.down {
+          color: ${SECONDARY_COLOR};
+          &:hover {
+            border-color: ${SECONDARY_COLOR};
+          }
+        }
+      }
       .bet-state {
         font-size: 15px;
         color: white;
       }
+    }
+
+    &.next {
+      display: block;
+    }
+  }
+  div.detail {
+    margin-top: 30px;
+
+    > div:not(:first-child) {
+      margin-top: 10px;
+    }
+    div.row {
+      display: flex;
+      justify-content: space-between;
+      div.diff {
+        color: ${(props) => props.mainColor};
+        justify-self: flex-end;
+      }
+    }
+
+    div.timer {
+      font-size: 20px;
+    }
+    &.expired {
+      margin-top: 0;
     }
   }
 
@@ -158,8 +199,6 @@ function useInterval(callback: any, delay: any) {
 //   return <h1>{count}</h1>
 // }
 
-const currentTimestamp = Math.floor(Date.now())
-
 const Card: React.FC<CardProps> = ({
   round,
   roundState,
@@ -174,7 +213,6 @@ const Card: React.FC<CardProps> = ({
   const [betMode, setBetMode] = useState<"up" | "down" | null>(null)
   const [betAmount, setBetAmount] = useState(0)
   const DEFUALT_BET_AMOUNT = 0.02
-  const { network } = useAptosModule()
 
   useEffect(() => {
     setBetAmount(DEFUALT_BET_AMOUNT)
@@ -209,8 +247,8 @@ const Card: React.FC<CardProps> = ({
   const bearPayout = getPayout(totalAmount, bearAmount)
 
   const priceDiffDescription = priceDiff.isBullish
-    ? `+$${priceDiff.diff}`
-    : `-$${priceDiff.diff}`
+    ? `+${priceDiff.diff}`
+    : `-${priceDiff.diff}`
 
   // 베팅이 끝난경우 UX가  동일
   const isFinished = ["expired", "live"].includes(roundState)
@@ -261,7 +299,7 @@ const Card: React.FC<CardProps> = ({
 
     const transaction = {
       type: "entry_function_payload",
-      function: `${betosAddress[network]}::${MODULE_NAME}::bet`,
+      function: `${"temptmeptmepmp"}::${MODULE_NAME}::bet`,
       arguments: [String(epoch), String(aptAmount), String(isBull)],
       type_arguments: [],
     }
@@ -275,274 +313,98 @@ const Card: React.FC<CardProps> = ({
       console.log("e", e)
     }
   }
-
-  const getIcon = () => {
-    if (isExpired) return Ban
-    if (isLive) return Play
-    if (isNext) return Play
-    if (isLater) return Clock
-    return ""
-  }
-  const TimerWrapper = styled.div`
-    width: 95%;
-    margin: auto;
-    height: 30px;
-  `
-
-  const lastPrice = (function () {
-    let price = 0
-    if (isLive) {
-      price = currentAptosPrice
-    }
-    if (isExpired) {
-      price = closePrice
-    }
-    return "$" + formatNumber(price, 4)
-  })()
-
-  const ArrowWrapper = styled.div`
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-
-    img {
-      width: 200px;
-      display: inline;
-    }
-    .description {
-      font-size: 15px;
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      .up {
-        color: ${PRIMARY_TEXT_COLOR};
-      }
-      .down {
-        color: ${SECONDARY_COLOR};
-      }
-      .payout {
-        font-size: 12px;
-      }
-
-      div:last-child {
-        margin-top: 5px;
-      }
-    }
-  `
-
-  const PriceDetail = styled.div<{ mainColor: string }>`
-    min-height: 135px;
-    border: 1px solid ${mainColor};
-    margin: 15px 0;
-    padding: 10px;
-    border-radius: 5px;
-    .summary-title {
-      font-style: normal;
-      font-weight: 700;
-      font-size: 12px;
-      line-height: 14px;
-      color: #8f9098;
-    }
-    .summary {
-      .price {
-        color: ${(props) => props.mainColor};
-      }
-
-      .diff {
-        background-color: ${(props) => props.mainColor};
-        border-radius: 8px;
-        font-size: 15px;
-        color: white;
-        width: 102px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-    }
-
-    div.detail {
-      margin-top: 20px;
-
-      font-weight: 400;
-      font-size: 12px;
-      line-height: 14px;
-
-      > div:not(:first-child) {
-        margin-top: 10px;
-      }
-      div.row {
-        display: flex;
-        justify-content: space-between;
-        div.diff {
-          color: ${(props) => props.mainColor};
-          justify-self: flex-end;
-        }
-      }
-
-      div.timer {
-        font-size: 20px;
-      }
-      &.expired {
-        margin-top: 0;
-      }
-    }
-    .next-content {
-      display: flex;
-      flex-direction: column;
-
-      button {
-        width: 100%;
-        &.up {
-          background-color: ${PRIMARY_TEXT_COLOR};
-          color: black;
-          &:hover {
-            border-color: ${PRIMARY_TEXT_COLOR};
-          }
-        }
-        &.down {
-          background-color: ${SECONDARY_COLOR};
-          color: white;
-          &:hover {
-            border-color: ${SECONDARY_COLOR};
-          }
-        }
-      }
-    }
-  `
-
-  const ArrowUpImage = (function () {
-    if (isLater || isNext) return ArrowUpBlack
-    if (isBullish) return ArrowUp
-    return ArrowUpBlack
-  })()
-
-  const ArrowDownImage = (function () {
-    if (isLater || isNext) return ArrowDownBlack
-    if (!isBullish) return ArrowDown
-    return ArrowDownBlack
-  })()
-
-  const renderBetButtons = () => {
-    if (betMode === null) {
-      return (
-        <div>
-          <Button
-            className="up"
-            onClick={() => {
-              setBetMode("up")
-            }}>
-            Up
-          </Button>
-          <Button
-            className="down"
-            onClick={() => {
-              setBetMode("down")
-            }}>
-            Down
-          </Button>
-        </div>
-      )
-    }
-
-    return (
-      <div>
-        <Button
-          onClick={() => {
-            handleClickBet()
-          }}>
-          Confirm
-        </Button>
-        <Button
-          onClick={() => {
-            setBetMode(null)
-          }}>
-          Cancel
-        </Button>
-      </div>
-    )
-  }
+  // milliseconds
+  const currentTimestamp = Math.floor(Date.now())
 
   return (
-    <CardWrapper isNext={isNext} isDisabled={isDisabled}>
-      <Header>
-        <div>
-          <img src={getIcon()} width={20} alt="icon" />
-          <span className="status">{title}</span>
-        </div>
+    <CardWrapper mainColor={mainColor} isNext={isNext} isDisabled={isDisabled}>
+      <Header mainColor={mainColor}>
+        {isLater && <img src={ClockImage} alt="clock" />}
         <span className="number">{`#${epoch}`}</span>
-      </Header>
-      <TimerWrapper>
-        {(isLive || isExpired) && (
+        <span className="status">{title}</span>
+        {isLive && (
           <PlusTimer
-            disabled={isExpired}
             setDisabled={setDisabled}
             start={round.closeTimestamp - currentTimestamp}
             end={ROUND_STEP}
             showProgress
           />
         )}
-      </TimerWrapper>
-
+      </Header>
       <Contents mainColor={mainColor}>
-        <ArrowWrapper>
-          <img src={ArrowUpImage} />
-          <div className="description">
-            <div className="up">Up</div>
-            <div className="payout">{bullPayout}x Payout</div>
+        {isLive && (
+          <div>
+            <div>Current Price</div>
+            <div className="summary">
+              <div className="price">
+                {currentAptosPrice
+                  ? `$${formatNumber(currentAptosPrice, 4)}`
+                  : "Loading..."}
+              </div>
+            </div>
           </div>
-        </ArrowWrapper>
-        <PriceDetail mainColor={mainColor}>
-          {(isLive || isExpired) && (
+        )}
+        {isExpired && (
+          <div>
+            <div>Closed Price</div>
+            <div className="summary">
+              <div className="price">${formatNumber(closePrice, 4)}</div>
+            </div>
+          </div>
+        )}
+        {isNext && (
+          <div className="summary next">
             <div>
-              <div className="summary-title">LAST PRICE</div>
-              <div className="summary">
-                <div className="price">{lastPrice}</div>
-                <div className="diff">{priceDiffDescription}</div>
-              </div>
-
-              <div className="detail">
-                <div className="row">
-                  <span className="title">Locked Price:</span>
-                  <span className="content">${formatNumber(lockPrice, 4)}</span>
-                </div>
-
-                <div className="row">
-                  <span className="title">Prize Pool:</span>
-                  <span className="content">{totalAmount}APT</span>
-                </div>
-              </div>
-            </div>
-          )}
-          {isNext && (
-            <div className="next-content">
-              <div>
-                {betStatusOnCurrentRound ? (
-                  <div className="bet-state">
-                    <div>You betted on this stage</div>
-                    <div
-                      style={{
-                        color: isBull ? colorPrimaryText : SECONDARY_COLOR,
-                      }}>
-                      <span>
-                        <span>{amount}</span>APT
-                      </span>
-                      <span> on {isBull ? "Up" : "Down"}</span>
-                    </div>
+              {betStatusOnCurrentRound ? (
+                <div className="bet-state">
+                  <div>You betted on this stage</div>
+                  <div
+                    style={{
+                      color: isBull ? colorPrimaryText : SECONDARY_COLOR,
+                    }}>
+                    <span>
+                      <span>{amount}</span>APT
+                    </span>
+                    <span> on {isBull ? "Up" : "Down"}</span>
                   </div>
-                ) : (
-                  renderBetButtons()
-                )}
-              </div>
+                </div>
+              ) : betMode !== null ? (
+                <>
+                  <Button
+                    onClick={() => {
+                      handleClickBet()
+                    }}>
+                    Confirm
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setBetMode(null)
+                    }}>
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    className="up"
+                    onClick={() => {
+                      setBetMode("up")
+                    }}>
+                    Up
+                  </Button>
+                  <Button
+                    className="down"
+                    onClick={() => {
+                      setBetMode("down")
+                    }}>
+                    Down
+                  </Button>
+                </>
+              )}
             </div>
-          )}
-        </PriceDetail>
+            <MinusTimer start={round.lockTimestamp - currentTimestamp} />
+          </div>
+        )}
 
         {betMode !== null ? (
           <div className="bet_input">
@@ -576,15 +438,28 @@ const Card: React.FC<CardProps> = ({
               <span className="content">{totalAmount}APT</span>
             </div>
           </div>
-        ) : null}
+        ) : (
+          <div className="detail expired live">
+            <div className="row">
+              <span className="title">UP / Down Payout:</span>
+              <span className="content">{`${bullPayout}x / ${bearPayout}x`}</span>
+            </div>
 
-        <ArrowWrapper>
-          <img src={ArrowDownImage} />
-          <div className="description">
-            <div className="payout">{bearPayout}x Payout</div>
-            <div className="down">Down</div>
+            <div className="row">
+              <span className="title">Locked Price:</span>
+              <span className="content">${lockPrice}</span>
+            </div>
+
+            <div className="row">
+              <div></div>
+              <div className="diff">${priceDiffDescription}</div>
+            </div>
+            <div className="row">
+              <span className="title">Prize Pool:</span>
+              <span className="content">{totalAmount}APT</span>
+            </div>
           </div>
-        </ArrowWrapper>
+        )}
       </Contents>
     </CardWrapper>
   )

@@ -9,6 +9,7 @@ import { BetStatus, Round } from "../types"
 import { betosAddress, MODULE_NAME, PRIMARY_TEXT_COLOR } from "../constants"
 import MyBets from "./MyBets"
 import useAptosModule from "../useAptosModule"
+import MinusTimer from "./MinusTimer"
 
 const Wrapper = styled.div``
 
@@ -44,6 +45,16 @@ const Board = styled.div`
   margin-bottom: 200px;
   display: flex;
   justify-content: center;
+`
+
+const NextCardWrapper = styled.div`
+  position: relative;
+  .timer-wrapper {
+    font-size: 22px;
+    position: absolute;
+    left: 20px;
+    top: -20px;
+  }
 `
 
 // expired: 결과까지 끝남
@@ -126,6 +137,8 @@ const Home: React.FC<Props> = ({
 
     await window.aptos.signAndSubmitTransaction(transaction)
   }
+
+  const currentTimestamp = Math.floor(Date.now())
   return (
     <Wrapper>
       <div
@@ -182,6 +195,21 @@ const Home: React.FC<Props> = ({
               />
             )
           }
+          if (roundState === "next") {
+            return (
+              <NextCardWrapper key={index}>
+                <div className="timer-wrapper">
+                  <MinusTimer start={round.lockTimestamp - currentTimestamp} />
+                </div>
+                <Card
+                  round={round}
+                  roundState={roundState}
+                  betStatusOnCurrentRound={betStatusOnCurrentRound}
+                />
+              </NextCardWrapper>
+            )
+          }
+
           return (
             <Card
               key={index}

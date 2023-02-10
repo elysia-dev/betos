@@ -9,6 +9,7 @@ type Props = {
   end: number
   showProgress?: boolean
   setDisabled?: () => void
+  disabled?: boolean
 }
 
 const Wrapper = styled.div`
@@ -23,8 +24,19 @@ const PlusTimer: React.FC<Props> = ({
   end,
   showProgress,
   setDisabled,
+  disabled,
 }) => {
-  if (start > end) return null
+  if (disabled) {
+    return (
+      <Progress
+        showInfo={false}
+        percent={100}
+        strokeColor={"white"}
+        trailColor={"#141615"}
+      />
+    )
+  }
+  // if (start > end) return null
   const time = usePlusCounter(start)
   const detail = getTimeDetail(time)
   const progress = (time / ROUND_STEP) * 100
@@ -43,7 +55,12 @@ const PlusTimer: React.FC<Props> = ({
         marginLeft: "5px",
       }}>
       {showProgress ? (
-        <Progress showInfo={false} percent={progress} />
+        <Progress
+          showInfo={false}
+          percent={progress}
+          strokeColor={"white"}
+          trailColor={"#141615"}
+        />
       ) : (
         <div>{detail}</div>
       )}
