@@ -1,12 +1,3 @@
-// export const APT_USD_TESTNET_PRICE_ID =
-//   "44a93dddd8effa54ea51076c4e851b6cbbfd938e82eb90197de38fe8876bb66e"
-// export const TESTNET_PRICE_SERVICE = "https://xc-testnet.pyth.network"
-
-// export const BETOS_ADDRESS =
-//   "0x57c21eeb2fd33f64acf8fb54e53783c04579cac5048adec5de00ea95119ebcd7"
-
-// export const CLIENT_ENDPOINT = "https://fullnode.testnet.aptoslabs.com/v1"
-
 export const MODULE_NAME = "prediction"
 
 export const SECONDARY_COLOR = "#F57272"
@@ -33,7 +24,7 @@ export const endpoint = {
 } as const
 
 export const betosAddress = {
-  Mainnet: "0xb7819e2435c024bd2a84f7527e6b752882a38a0f8835542fa893ac5f511d58a",
+  Mainnet: "0xb7819e2435c024bd2a84f7527e6b752882a38a0f8835542fa893ac5f511d58a4",
   // TODO: change
-  Testnet: "0x57c21eeb2fd33f64acf8fb54e53783c04579cac5048adec5de00ea95119ebcd7",
+  Testnet: "0x2767545a8d72f4856540d91c6e5b97acbd37380e5d65fb3a11c18c218bbfde12",
 } as const

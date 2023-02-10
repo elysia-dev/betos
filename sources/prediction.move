@@ -24,9 +24,8 @@ module betos::prediction {
     const INTERVAL_SECONDS: u64 = 3600; // 1 hour
 
     // For the entire list of price_ids head to https://pyth.network/developers/price-feed-ids/#pyth-cross-chain-testnet
-    const APTOS_USD_PRICE_FEED_IDENTIFIER : vector<u8> = x"44a93dddd8effa54ea51076c4e851b6cbbfd938e82eb90197de38fe8876bb66e";
-    // mainnet
-    // const APTOS_USD_PRICE_FEED_IDENTIFIER : vector<u8> = x"03ae4db29ed4ae33d323568895aa00337e658e348b37509f5372ae51f0af00d5";
+    const APT_USD_TESTNET_PRICE_ID : vector<u8> = x"44a93dddd8effa54ea51076c4e851b6cbbfd938e82eb90197de38fe8876bb66e";
+    const APT_USD_MAINNET_PRICE_ID : vector<u8> = x"03ae4db29ed4ae33d323568895aa00337e658e348b37509f5372ae51f0af00d5";
 
     const ENO_OWNER: u64 = 0;
     const EBET_TOO_EARLY: u64 = 1;
@@ -390,7 +389,17 @@ module betos::prediction {
         pyth::update_price_feeds(pyth_update_data, coins);
 
         // Now we can use the prices which we have just updated
-        pyth::get_price(price_identifier::from_byte_vec(APTOS_USD_PRICE_FEED_IDENTIFIER)) // Get recent price (will fail if price is too old)
+        let price_id = get_price_id();
+        pyth::get_price(price_identifier::from_byte_vec(price_id)) // Get recent price (will fail if price is too old)
+    }
+
+    fun get_price_id(): vector<u8> {
+        let ret = APT_USD_TESTNET_PRICE_ID;
+        if (aptos_framework::chain_id::get() == 1) {
+            ret = APT_USD_MAINNET_PRICE_ID;
+        };
+
+        return ret
     }
 
     #[test(creator = @0xa11ce, framework = @0x1)]
@@ -422,6 +431,15 @@ module betos::prediction {
 
     }
 
+    #[test(framework = @0x1)]
+    fun test_get_price_id(
+        framework: &signer,
+    ) {
+        aptos_framework::chain_id::initialize_for_test(framework, 1);
+        let price_id: vector<u8> = get_price_id();
+        assert!(price_id == APT_USD_MAINNET_PRICE_ID, 0);
+    }
+
     #[test_only]
     public entry fun set_up_test(origin_account: &signer, resource_account: &signer, framework: signer) {
         use std::vector;
@@ -431,7 +449,8 @@ module betos::prediction {
 
         // create a resource account from the origin account, mocking the module publishing process
         resource_account::create_resource_account(origin_account, vector::empty<u8>(), vector::empty<u8>());
-        let resource_addr = aptos_framework::account::create_resource_address(&user_addr, seed);
+        let user_addr = signer::address_of(origin_account);
+        let resource_addr = aptos_framework::account::create_resource_address(&user_addr, vector::empty<u8>());
         debug::print(&resource_addr);
 
         init_module(resource_account);
@@ -454,8 +473,8 @@ module betos::prediction {
         let (start_timestamp, lock_timestamp, close_timestamp, _, _) = get_round(epoch);
 
         assert!(start_timestamp == now, 0);
-        assert!(lock_timestamp == now + 300, 0);
-        assert!(close_timestamp == now + 600, 0);
+        assert!(lock_timestamp == now + INTERVAL_SECONDS, 0);
+        assert!(close_timestamp == now + 2 * INTERVAL_SECONDS, 0);
     }
 
 /*

@@ -5,8 +5,8 @@ import { hideBin } from "yargs/helpers";
 import { Buffer } from "buffer";
 
 const argv = yargs(hideBin(process.argv))
-  .option("action", {
-    description: "start, lock, execute",
+  .option("network", {
+    description: "mainnet, testnet",
     type: "string",
     required: true,
   })
@@ -15,22 +15,46 @@ const argv = yargs(hideBin(process.argv))
   .parseSync();
 
 async function main() {
-  const endpoint = "https://fullnode.testnet.aptoslabs.com";
-  const BETOS_ADDRESS = process.env.BETOS_ADDRESS;
-  if (process.env.BETOS_ADDRESS === undefined) {
-    throw new Error(`BETOS_ADDRESS environment variable should be set.`);
+  const { TESTNET_BETOS_ADDRESS, MAINNET_BETOS_ADDRESS } = process.env;
+  const { network } = argv;
+
+  // validate env, argv
+  if (network === undefined) {
+    throw new Error("network must be mainnet or testnet");
   }
-  const connection = new AptosPriceServiceConnection(
-    "https://xc-testnet.pyth.network"
-  ); // See Price Service endpoints section below for other endpoints
+  if (network === "testnet" && TESTNET_BETOS_ADDRESS === undefined) {
+    throw new Error(
+      `TESTNET_BETOS_ADDRESS environment variable should be set.`
+    );
+  }
+  if (network === "mainnet" && MAINNET_BETOS_ADDRESS === undefined) {
+    throw new Error(
+      `MAINNET_BETOS_ADDRESS environment variable should be set.`
+    );
+  }
 
-  const priceIds = [
-    // You can find the ids of prices at https://pyth.network/developers/price-feed-ids#aptos-testnet
-    // "0xf9c0172ba10dfa4d19088d94f5bf61d3b54d5bd7483a322a982e1373ee8ea31b", // BTC/USD price id in testnet
-    // "0xca80ba6dc32e08d06f1aa886011eed1d77c77be9eb761cc10d72b7d0a2fd57a6", // ETH/USD price id in testnet
-    "0x44a93dddd8effa54ea51076c4e851b6cbbfd938e82eb90197de38fe8876bb66e",
-  ];
+  const endpoint =
+    network === "mainnet"
+      ? "https://fullnode.mainnet.aptoslabs.com"
+      : "https://fullnode.testnet.aptoslabs.com";
 
+  const betosAddress =
+    network == "mainnet" ? MAINNET_BETOS_ADDRESS : TESTNET_BETOS_ADDRESS;
+
+  const priceServiceAddress =
+    network == "mainnet"
+      ? "https://xc-mainnet.pyth.network"
+      : "https://xc-testnet.pyth.network";
+
+  // You can find the ids of prices at https://pyth.network/developers/price-feed-ids#aptos-testnet
+  let priceId =
+    network === "mainnet"
+      ? "0x03ae4db29ed4ae33d323568895aa00337e658e348b37509f5372ae51f0af00d5" // Mainnet
+      : "0x44a93dddd8effa54ea51076c4e851b6cbbfd938e82eb90197de38fe8876bb66e"; // Testnet
+
+  let priceIds = [priceId];
+
+  const connection = new AptosPriceServiceConnection(priceServiceAddress);
   // In order to use Pyth prices in your protocol you need to submit the price update data to Pyth contract in your target
   // chain. `getPriceUpdateData` creates the update data which can be submitted to your contract. Then your contract should
   // call the Pyth Contract with this data.
@@ -40,10 +64,12 @@ async function main() {
   const latestVaas = await connection.getLatestVaas(priceIds);
   console.log(latestVaas);
 
+  /*
   const x = latestVaas.map((vaa) =>
     Array.from(Buffer.from(vaa, "base64").toString("hex")).join("")
   );
   console.log(x);
+  */
 
   const priceUpdateData = await connection.getPriceFeedsUpdateData(priceIds);
   console.log(priceUpdateData.toString);
@@ -59,31 +85,12 @@ async function main() {
     // address: "",
   });
 
-  let entryFunction;
-  if (argv.action === "start") {
-    entryFunction = TxnBuilderTypes.EntryFunction.natural(
-      `${BETOS_ADDRESS}::prediction`,
-      "genesis_start_round",
-      [],
-      []
-    );
-  } else if (argv.action === "lock") {
-    entryFunction = TxnBuilderTypes.EntryFunction.natural(
-      `${BETOS_ADDRESS}::prediction`,
-      "genesis_lock_round",
-      [],
-      [AptosPriceServiceConnection.serializeUpdateData(priceUpdateData)]
-    );
-  } else if (argv.action === "execute") {
-    entryFunction = TxnBuilderTypes.EntryFunction.natural(
-      `${BETOS_ADDRESS}::prediction`,
-      "execute_round",
-      [],
-      [AptosPriceServiceConnection.serializeUpdateData(priceUpdateData)]
-    );
-  } else {
-    throw new Error("action must be start, lock, or execute");
-  }
+  const entryFunction = TxnBuilderTypes.EntryFunction.natural(
+    `${betosAddress}::prediction`,
+    "execute_round",
+    [],
+    [AptosPriceServiceConnection.serializeUpdateData(priceUpdateData)]
+  );
 
   console.log(
     Buffer.from(
