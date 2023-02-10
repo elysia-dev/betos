@@ -9,6 +9,7 @@ provider:
   name: aws
   runtime: nodejs16.x
   region: ap-northeast-2
+  timeout: 10 # default is 6 sec
   environment:
     APTOS_KEY: ${ssm:/betos/test/aptos_key}
 
@@ -18,12 +19,12 @@ functions:
     events:
       - schedule: cron(0 0,6,12,18 * * ? *) # every 6 hour
     environment:
-      BETOS_ADDRESS: "0xb7819e2435c024bd2a84f7527e6b752882a38a0f8835542fa893ac5f511d58a4"
+      BETOS_ADDRESS: "0x96be8b77f364acc83b5cf7097116c4c34a404f8e357941dff04b1d0baebcf29d"
       NETWORK: "mainnet"
   rateHandlerTest:
     handler: handler.run
     events:
       - schedule: cron(0/10 * * * ? *) # every 10 minute
     environment:
-      BETOS_ADDRESS: "0xb2b26bc6b8cfcae9f83e92804f987523e1600291a8a2d9000a39e5d3f1929135"
+      BETOS_ADDRESS: "0x71e2a99f3e9d32ef9cddac76d88f0cf8ade564bf1f24e016da160bd75d70eedb"
       NETWORK: "testnet"

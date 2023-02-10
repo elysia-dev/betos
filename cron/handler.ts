@@ -18,7 +18,10 @@ async function execute_round(betosAddress: string, network: string) {
     throw new Error(`APTOS_KEY environment variable should be set.`);
   }
 
-  const INTERVAL = 6 * 60 * 60; // 6 hours
+  const now = Math.floor(Date.now() / 1000);
+  const SIX_HOURS = 6 * 60 * 60;
+  const TEN_MINUTES = 10 * 60;
+  const INTERVAL = network == "mainnet" ? SIX_HOURS : TEN_MINUTES;
 
   const endpoint =
     network == "mainnet"
@@ -73,7 +76,9 @@ async function execute_round(betosAddress: string, network: string) {
     [],
     [
       AptosPriceServiceConnection.serializeUpdateData(priceUpdateData),
-      BCS.bcsSerializeUint64(INTERVAL),
+      BCS.bcsSerializeUint64(now),
+      BCS.bcsSerializeUint64(now + INTERVAL),
+      BCS.bcsSerializeUint64(now + 2 * INTERVAL),
     ]
   );
 
