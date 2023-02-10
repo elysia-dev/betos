@@ -13,7 +13,7 @@ import {
 } from "../utils"
 import { BetStatus, RawRound, Round } from "../types"
 import {
-  BETOS_ADDRESS,
+  betosAddress,
   MODULE_NAME,
   PRIMARY_TEXT_COLOR,
   SECONDARY_COLOR,
@@ -21,7 +21,6 @@ import {
 
 import type { ColumnsType } from "antd/es/table"
 import styled from "styled-components"
-import { handleClickClaim } from "./Home"
 
 const { Title, Text } = Typography
 
@@ -176,6 +175,7 @@ const Claim: React.FC<Props> = ({
   currentEpoch,
   getRoundByEpoch,
 }) => {
+  const { network } = useAptosModule()
   const tableData = useMemo(() => {
     return compact(
       map(myEpochs, (myEpoch, index) => {
@@ -256,6 +256,20 @@ const Claim: React.FC<Props> = ({
     }, 0)
     return formatNumber(sum, 10)
   })()
+
+  const handleClickClaim = async () => {
+    const ok = window.confirm(`Claim all bets. Is it okay?`)
+    if (!ok) return
+
+    const transaction = {
+      type: "entry_function_payload",
+      function: `${betosAddress[network]}::${MODULE_NAME}::claim_entry`,
+      arguments: [],
+      type_arguments: [],
+    }
+
+    await window.aptos.signAndSubmitTransaction(transaction)
+  }
 
   return (
     <Wrapper>

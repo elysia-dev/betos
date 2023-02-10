@@ -2,7 +2,7 @@ import ContractContext from "./ContractContext"
 import { PropsWithChildren, useEffect, useMemo, useState } from "react"
 import { Types } from "aptos"
 import useAptosModule from "./useAptosModule"
-import { BETOS_ADDRESS, MODULE_NAME, ROUND_STEP } from "./constants"
+import { betosAddress, MODULE_NAME, ROUND_STEP } from "./constants"
 import { BetStatus, RawRound, Round } from "./types"
 import { parseBetStatus, parseRound } from "./utils"
 import { compact, map } from "lodash"
@@ -22,11 +22,16 @@ import { compact, map } from "lodash"
 //             <-BETOS_ADDRESS, currentEpoch, handleOfBetContainer
 // 6. myEpochs(유저의 전체 베팅기록) <- epochsOfBetContainer.map 을 돌면서 betStatus를 조회
 
-export const RESOURCE_KEY_BET = `${BETOS_ADDRESS}::${MODULE_NAME}::BetContainer`
-export const RESOURCE_KEY_ROUND = `${BETOS_ADDRESS}::${MODULE_NAME}::RoundContainer`
-
 const ContractProvider: React.FC<PropsWithChildren> = ({ children }) => {
-  const { client, address, modules } = useAptosModule()
+  const {
+    client,
+    address,
+    modules,
+    network,
+    RESOURCE_KEY_ROUND,
+    RESOURCE_KEY_BET,
+  } = useAptosModule()
+  const betosAddressByNetwork = betosAddress[network]
 
   // contract에 있는 리소스
   const [betosResources, setBetosResources] = useState<Types.MoveResource[]>([])
@@ -44,7 +49,7 @@ const ContractProvider: React.FC<PropsWithChildren> = ({ children }) => {
   // round 정보 fetch
   const fetchBetosResources = () => {
     client
-      .getAccountResources(BETOS_ADDRESS)
+      .getAccountResources(betosAddressByNetwork)
       .then((res) => setBetosResources(res))
   }
 
@@ -130,7 +135,7 @@ const ContractProvider: React.FC<PropsWithChildren> = ({ children }) => {
     if (!key) return null
     return {
       key_type: `u64`,
-      value_type: `${BETOS_ADDRESS}::${MODULE_NAME}::Bet`,
+      value_type: `${betosAddress[network]}::${MODULE_NAME}::Bet`,
       key: String(key),
     }
   }
