@@ -2,6 +2,8 @@ import React from "react"
 import { Types, AptosClient } from "aptos"
 import { betosAddress, endpoint, MODULE_NAME } from "./constants"
 
+import { useNavigate } from "react-router-dom"
+
 // Create an AptosClient to interact with devnet.
 
 const useAptosModule = () => {
@@ -10,6 +12,12 @@ const useAptosModule = () => {
   const [account, setAccount] = React.useState<Types.AccountData | null>(null)
   const [network, setNetwork] = React.useState<"Testnet" | "Mainnet">("Testnet")
   const betosAddressByNetwork = betosAddress[network]
+
+  const navigate = useNavigate()
+
+  const refreshPage = () => {
+    navigate(0)
+  }
 
   const client = new AptosClient(endpoint[network])
   // Check for the module; show publish instructions if not present.
@@ -37,6 +45,7 @@ const useAptosModule = () => {
   window.aptos.onNetworkChange(
     (newNetwork: { networkName: "Mainnet" | "Testnet" }) => {
       setNetwork(newNetwork?.networkName)
+      refreshPage()
     },
   )
 
