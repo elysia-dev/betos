@@ -50,8 +50,9 @@ const useAptosModule = () => {
     },
   )
 
-  // window.aptos.onAccountChange((newAccount: string) => {
-  // })
+  window.aptos.onAccountChange((newAccount: string) => {
+    refreshPage()
+  })
 
   React.useEffect(() => {
     client?.getAccountModules(betosAddressByNetwork).then(setModules)
