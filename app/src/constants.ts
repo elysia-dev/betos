@@ -29,3 +29,5 @@ export const betosAddress = {
   // TODO: change
   Testnet: "0x2767545a8d72f4856540d91c6e5b97acbd37380e5d65fb3a11c18c218bbfde12",
 } as const
+
+export const DEFUALT_BET_AMOUNT = 0.02

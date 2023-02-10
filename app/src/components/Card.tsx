@@ -1,7 +1,7 @@
 import styled from "styled-components"
 import { Button, Typography, InputNumber, theme } from "antd"
 import { gray } from "@ant-design/colors"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useContext } from "react"
 import { RoundState } from "./Home"
 import Clock from "../assets/clock.png"
 import Ban from "../assets/ban.png"
@@ -20,6 +20,7 @@ import useAptosModule from "../useAptosModule"
 import { BetStatus, Round } from "../types"
 import {
   betosAddress,
+  DEFUALT_BET_AMOUNT,
   MODULE_NAME,
   PRIMARY_TEXT_COLOR,
   ROUND_STEP,
@@ -27,6 +28,7 @@ import {
 } from "../constants"
 import MinusTimer from "./MinusTimer"
 import PlusTimer from "./PlusTimer"
+import ContractContext from "../ContractContext"
 
 const { Text } = Typography
 
@@ -82,8 +84,8 @@ const Header = styled.div`
   .position {
     display: flex;
     justify-content: center;
-    width: 80px;
-    padding: 5px;
+    width: 85px;
+    padding: 4px;
     border-radius: 10px;
     &.up {
       background: ${PRIMARY_TEXT_COLOR};
@@ -121,15 +123,13 @@ const Contents = styled.div<{ mainColor: string }>`
       height: 35px;
       align-items: center;
       justify-content: space-between;
-
-      .bet-state {
-        font-size: 15px;
-        color: white;
-      }
     }
   }
 
   div.bet_input {
+    input {
+      height: 40px;
+    }
     h4 {
       font-size: 15px;
     }
@@ -305,6 +305,20 @@ const DetailBox = styled.div<{ mainColor: string }>`
         }
       }
     }
+
+    .bet-state {
+      padding: 40px 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+
+      font-style: normal;
+      font-weight: 700;
+      font-size: 12px;
+      line-height: 14px;
+      color: #8f9098;
+    }
   }
 `
 
@@ -331,12 +345,8 @@ const Card: React.FC<CardProps> = ({
 }) => {
   const [isDisabled, setIsDisabled] = useState(false)
   const setDisabled = () => setIsDisabled(true)
-  const {
-    token: { colorPrimaryText, colorTextSecondary, colorPrimary },
-  } = theme.useToken()
   const [betMode, setBetMode] = useState<"up" | "down" | null>(null)
   const [betAmount, setBetAmount] = useState(0)
-  const DEFUALT_BET_AMOUNT = 0.02
   const { network } = useAptosModule()
 
   const { fetchBetStatusOfCurrentUser } = useContext(ContractContext)
@@ -377,37 +387,39 @@ const Card: React.FC<CardProps> = ({
     ? `+$${priceDiff.diff}`
     : `-$${priceDiff.diff}`
 
-  // 베팅이 끝난경우 UX가  동일
-  const isFinished = ["expired", "live"].includes(roundState)
-
   const isBullish = (function () {
-    if (roundState === "expired" || roundState === "next") {
+    if (isExpired || isNext) {
       return closePrice > lockPrice
     }
-    if (roundState === "live") {
+    if (isLive) {
       return currentAptosPrice > lockPrice
     }
     return false
   })()
 
   const mainColor = (function () {
-    if (roundState === "later") {
+    if (isLater) {
       return gray[1]
     }
+    if (isNext && betStatusOnCurrentRound) {
+      return betStatusOnCurrentRound.isBull
+        ? PRIMARY_TEXT_COLOR
+        : SECONDARY_COLOR
+    }
     if (isBullish) {
-      return colorPrimaryText
+      return PRIMARY_TEXT_COLOR
     }
     return SECONDARY_COLOR
   })()
 
   const title = (function () {
-    if (roundState === "expired") {
+    if (isExpired) {
       return "Expired"
     }
-    if (roundState === "live") {
+    if (isLive) {
       return "Live"
     }
-    if (roundState === "next") {
+    if (isNext) {
       return "Next"
     }
     return "Later"
@@ -650,24 +662,23 @@ const Card: React.FC<CardProps> = ({
               )}
               {isNext && (
                 <div className="next-content">
-                  <div>
-                    {betStatusOnCurrentRound ? (
-                      <div className="bet-state">
-                        <div>You betted on this stage</div>
-                        <div
-                          style={{
-                            color: isBull ? colorPrimaryText : SECONDARY_COLOR,
-                          }}>
-                          <span>
-                            <span>{amount}</span>APT
-                          </span>
-                          <span> on {isBull ? "Up" : "Down"}</span>
-                        </div>
+                  {betStatusOnCurrentRound ? (
+                    <div className="bet-state">
+                      <div>You betted on this stage</div>
+                      <div
+                        className=""
+                        style={{
+                          color: isBull ? PRIMARY_TEXT_COLOR : SECONDARY_COLOR,
+                        }}>
+                        <span>
+                          <span>{amount}</span>APT
+                        </span>
+                        <span> on {isBull ? "Up" : "Down"}</span>
                       </div>
-                    ) : (
-                      renderBetButtons()
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    renderBetButtons()
+                  )}
                 </div>
               )}
 

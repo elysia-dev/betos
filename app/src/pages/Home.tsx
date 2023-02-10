@@ -32,6 +32,7 @@ const HomeComponent: React.FC = () => {
   return (
     <Home
       totalRounds={totalRounds}
+      parsedRounds={parsedRounds}
       betosResources={betosResources}
       accountResources={accountResources}
       getRoundByEpoch={getRoundByEpoch}
