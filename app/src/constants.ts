@@ -25,9 +25,8 @@ export const endpoint = {
 } as const
 
 export const betosAddress = {
-  Mainnet: "0xb7819e2435c024bd2a84f7527e6b752882a38a0f8835542fa893ac5f511d58a4",
-  // TODO: change
-  Testnet: "0x2767545a8d72f4856540d91c6e5b97acbd37380e5d65fb3a11c18c218bbfde12",
+  Mainnet: "0x96be8b77f364acc83b5cf7097116c4c34a404f8e357941dff04b1d0baebcf29d",
+  Testnet: "0x71e2a99f3e9d32ef9cddac76d88f0cf8ade564bf1f24e016da160bd75d70eedb",
 } as const
 
 export const DEFUALT_BET_AMOUNT = 0.02
