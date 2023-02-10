@@ -1,11 +1,5 @@
-import React, { useContext, useEffect, useMemo, useState } from "react"
+import React, { useContext } from "react"
 import Home from "../components/Home"
-import { Types } from "aptos"
-import useAptosModule from "../useAptosModule"
-import { BETOS_ADDRESS, MODULE_NAME, ROUND_STEP } from "../constants"
-import { BetStatus, RawRound, Round } from "../types"
-import { parseBetStatus, parseRound } from "../utils"
-import { compact, map } from "lodash"
 import usePyth from "../usePyth"
 import ContractContext from "../ContractContext"
 

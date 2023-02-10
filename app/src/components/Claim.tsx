@@ -2,12 +2,26 @@ import { compact, map } from "lodash"
 
 import React, { useMemo } from "react"
 import { Button, Table, Tag, Typography } from "antd"
-import { checkRoundClosed, formatNumber } from "../utils"
-import { BetStatus } from "../types"
-import { PRIMARY_TEXT_COLOR, SECONDARY_COLOR } from "../constants"
+import { Types } from "aptos"
+import PartyImage from "../assets/party.png"
+import useAptosModule from "../useAptosModule"
+import {
+  checkRoundClosed,
+  formatNumber,
+  parseBetStatus,
+  parseRound,
+} from "../utils"
+import { BetStatus, RawRound, Round } from "../types"
+import {
+  BETOS_ADDRESS,
+  MODULE_NAME,
+  PRIMARY_TEXT_COLOR,
+  SECONDARY_COLOR,
+} from "../constants"
 
 import type { ColumnsType } from "antd/es/table"
 import styled from "styled-components"
+import { handleClickClaim } from "./Home"
 
 const { Title, Text } = Typography
 
@@ -24,7 +38,7 @@ interface BetRecord {
 
 const Wrapper = styled.div`
   margin-top: 50px;
-  padding: 100px;
+  padding: 150px;
 
   table {
     background-color: #000000;
@@ -33,8 +47,23 @@ const Wrapper = styled.div`
         background-color: black !important;
       }
     }
+
+    .column-round {
+      img {
+        opacity: 0;
+        margin-right: 10px;
+        position: absolute;
+        left: 20%;
+      }
+    }
     tr.claimable {
-      background-color: rgba(224, 255, 255, 0.1);
+      background-color: rgba(255, 255, 225, 0.1);
+
+      .column-round {
+        img {
+          opacity: 1;
+        }
+      }
     }
   }
 `
@@ -47,39 +76,42 @@ const Header = styled.div`
   margin-bottom: 20px;
 `
 
+const ClaimButton = styled(Button)`
+  width: 162px;
+  height: 40px;
+
+  background: #000000;
+  border: 1px solid #1c1f1d;
+  border-radius: 1000px;
+  background: #000000;
+
+  img {
+    margin-right: 5px;
+  }
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`
+
 const columnData: ColumnsType<BetRecord> = [
   {
     title: "Round",
     dataIndex: "round",
     key: "round",
+    render: (round, record) => {
+      return (
+        <div className="column-round">
+          <img src={PartyImage} width={20} />
+          {round}
+        </div>
+      )
+    },
   },
   {
     title: "Result",
     dataIndex: "state",
     key: "state",
-  },
-  {
-    title: "Up&down",
-    key: "isBull",
-    dataIndex: "upddown",
-    render: (_, { isBull }) => {
-      const color = isBull ? PRIMARY_TEXT_COLOR : SECONDARY_COLOR
-      return (
-        <Tag color={color} key={color}>
-          {isBull ? "Up" : "Down"}
-        </Tag>
-      )
-    },
-  },
-  {
-    title: "Position",
-    dataIndex: "position",
-    key: "position",
-  },
-  {
-    title: "Reward",
-    dataIndex: "reward",
-    key: "reward",
   },
   {
     title: "Claimed",
@@ -95,9 +127,32 @@ const columnData: ColumnsType<BetRecord> = [
     },
   },
   {
-    title: "Total",
+    title: "betOn",
+    key: "isBull",
+    dataIndex: "betOn",
+    render: (_, record) => {
+      const color = record.isBull ? PRIMARY_TEXT_COLOR : SECONDARY_COLOR
+      return (
+        <div>
+          <Tag color={color} key={color}>
+            {record.isBull ? "Up" : "Down"}
+          </Tag>
+          <span> {record.position} APT</span>
+        </div>
+      )
+    },
+  },
+
+  {
+    title: "TotalPool",
     dataIndex: "total",
     key: "total",
+  },
+
+  {
+    title: "Reward",
+    dataIndex: "reward",
+    key: "reward",
   },
 ]
 
@@ -205,8 +260,11 @@ const Claim: React.FC<Props> = ({
   return (
     <Wrapper>
       <Header>
-        <Title level={3}>Claimable Amounts : {claimableAmounts} APT</Title>
-        <Button>Claim</Button>
+        <Title level={4}>Total Prize: {claimableAmounts} APT</Title>
+        <ClaimButton disabled={!claimableAmounts} onClick={handleClickClaim}>
+          <img src={PartyImage} width={20} />
+          Claim
+        </ClaimButton>
       </Header>
 
       <Table
