@@ -25,5 +25,5 @@ functions:
     events:
       - schedule: cron(0/10 * * * ? *) # every 10 minute
     environment:
-      BETOS_ADDRESS: "0x2767545a8d72f4856540d91c6e5b97acbd37380e5d65fb3a11c18c218bbfde12"
+      BETOS_ADDRESS: "0xb2b26bc6b8cfcae9f83e92804f987523e1600291a8a2d9000a39e5d3f1929135"
       NETWORK: "testnet"

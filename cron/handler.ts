@@ -1,5 +1,5 @@
 import { AptosPriceServiceConnection } from "@pythnetwork/pyth-aptos-js";
-import { AptosAccount, AptosClient, TxnBuilderTypes } from "aptos";
+import { AptosAccount, AptosClient, TxnBuilderTypes, BCS } from "aptos";
 
 export const run = async (event) => {
   const res = await execute_round(
@@ -71,7 +71,10 @@ async function execute_round(betosAddress: string, network: string) {
     `${betosAddress}::prediction`,
     "execute_round",
     [],
-    [AptosPriceServiceConnection.serializeUpdateData(priceUpdateData), INTERVAL]
+    [
+      AptosPriceServiceConnection.serializeUpdateData(priceUpdateData),
+      BCS.bcsSerializeUint64(INTERVAL),
+    ]
   );
 
   /*
@@ -82,7 +85,7 @@ async function execute_round(betosAddress: string, network: string) {
   )
   */
 
-  const tx = await client.generateSignSubmitWaitForTransaction(
+  const tx = await client.generateSignSubmitTransaction(
     sender,
     new TxnBuilderTypes.TransactionPayloadEntryFunction(entryFunction)
   );
