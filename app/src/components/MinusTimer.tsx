@@ -7,7 +7,7 @@ type Props = {
   start: number
   showProgress?: boolean
   setDisabled?: () => void
-  style?: any
+  style?: { [key: string]: string | number }
 }
 
 const Wrapper = styled.div`

@@ -33,8 +33,7 @@ const useAptosModule = () => {
   React.useEffect(() => {
     const init = async () => {
       // connect
-      const { address, publicKey } = await window.aptos.connect()
-      const account = await window.aptos.account()
+      const { address } = await window.aptos.connect()
       const network = await window.aptos.network()
 
       setAddress(address)
@@ -50,7 +49,7 @@ const useAptosModule = () => {
     },
   )
 
-  window.aptos.onAccountChange((newAccount: string) => {
+  window.aptos.onAccountChange(() => {
     refreshPage()
   })
 

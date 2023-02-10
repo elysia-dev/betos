@@ -1,6 +1,6 @@
 import { Types } from "aptos"
 import { createContext } from "react"
-import { BetStatus, RawRound, Round } from "./types"
+import { BetStatus, Round } from "./types"
 
 type IContractContext = {
   betosResources: Types.MoveResource[]
@@ -11,7 +11,7 @@ type IContractContext = {
 
   accountResources: Types.MoveResource[]
   betStatusOnCurrentRound?: BetStatus
-  fetchBetStatusOfCurrentUser?: any
+  fetchBetStatusOfCurrentUser: () => void
   myEpochs?: BetStatus[]
 }
 
@@ -22,6 +22,7 @@ const initialState = {
   currentEpoch: 0,
 
   accountResources: [],
+  fetchBetStatusOfCurrentUser: () => {},
 }
 
 const ContractContext = createContext<IContractContext>(initialState)

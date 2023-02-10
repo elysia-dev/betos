@@ -3,7 +3,6 @@ import React, { useEffect } from "react"
 import styled from "styled-components"
 import { ROUND_STEP } from "../constants"
 import usePlusCounter from "../hooks/usePlusCounter"
-import { Round } from "../types"
 type Props = {
   start: number
   end: number
@@ -21,7 +20,6 @@ const Wrapper = styled.div`
 // all miliseconds
 const PlusTimer: React.FC<Props> = ({
   start,
-  end,
   showProgress,
   setDisabled,
   disabled,

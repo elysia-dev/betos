@@ -1,13 +1,12 @@
 import styled from "styled-components"
-import { Button, Typography, InputNumber, theme } from "antd"
+import { Button, Typography, InputNumber } from "antd"
 import { gray } from "@ant-design/colors"
-import { useEffect, useState, useRef, useContext } from "react"
+import { useEffect, useState, useContext } from "react"
 import { RoundState } from "./Home"
 import Clock from "../assets/clock.png"
 import Ban from "../assets/ban.png"
 import Play from "../assets/play.png"
 import ArrowUp from "../assets/arrow-up.png"
-import ArrowUpSVG from "../assets/arrow-up.svg"
 import ArrowDown from "../assets/arrow-down.png"
 import ArrowUpBlack from "../assets/arrow-up-black.png"
 import ArrowDownBlack from "../assets/arrow-down-black.png"
@@ -363,7 +362,7 @@ const Card: React.FC<CardProps> = ({
 
   const { bearAmount, bullAmount, totalAmount, closePrice, lockPrice, epoch } =
     round
-  const { amount, claimed, isBull } = betStatusOnCurrentRound || {}
+  const { amount, isBull } = betStatusOnCurrentRound || {}
   const isExpired = roundState === "expired"
   const isLive = roundState === "live"
   const isNext = roundState === "next" // 베팅가능
@@ -453,7 +452,7 @@ const Card: React.FC<CardProps> = ({
       await window.aptos.signAndSubmitTransaction(transaction)
       await fetchBetStatusOfCurrentUser()
       refreshPage()
-    } catch (e: any) {
+    } catch (e) {
       console.log("!!!!!!!!!!!!!!!!erorr in bet!!!!!!!!!!!!!!!!!!")
       console.log("e", e)
     }

@@ -2,16 +2,10 @@ import { compact, map } from "lodash"
 
 import React, { useMemo } from "react"
 import { Button, Table, Tag, Typography } from "antd"
-import { Types } from "aptos"
 import PartyImage from "../assets/party.png"
 import useAptosModule from "../useAptosModule"
-import {
-  checkRoundClosed,
-  formatNumber,
-  parseBetStatus,
-  parseRound,
-} from "../utils"
-import { BetStatus, RawRound, Round } from "../types"
+import { checkRoundClosed, formatNumber } from "../utils"
+import { BetStatus, Round } from "../types"
 import {
   betosAddress,
   MODULE_NAME,
@@ -98,7 +92,7 @@ const columnData: ColumnsType<BetRecord> = [
     title: "Round",
     dataIndex: "round",
     key: "round",
-    render: (round, record) => {
+    render: (round) => {
       return (
         <div className="column-round">
           <img src={PartyImage} width={20} />
@@ -165,7 +159,7 @@ const checkClaimable = (betRecord: BetRecord) => {
 }
 
 type Props = {
-  getRoundByEpoch: any
+  getRoundByEpoch: (epoch: number) => Round | undefined
   currentEpoch: number
   myEpochs?: BetStatus[]
 }

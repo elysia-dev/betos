@@ -1,13 +1,13 @@
 import React from "react"
 import styled from "styled-components"
-import { BetStatus } from "../types"
+import { BetStatus, Round } from "../types"
 import { Card as AntdCard } from "antd"
 import { checkRoundClosed } from "../utils"
 import { PRIMARY_TEXT_COLOR, SECONDARY_COLOR } from "../constants"
 type Props = {
   myEpochs?: BetStatus[]
   currentEpoch: number
-  getRoundByEpoch: any
+  getRoundByEpoch: (epoch: number) => Round | undefined
 }
 
 const Wrapper = styled.div`

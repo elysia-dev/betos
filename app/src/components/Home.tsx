@@ -1,6 +1,6 @@
 import React, { useState } from "react"
 import styled from "styled-components"
-import { Alert, Button, Space, Spin, Tag } from "antd"
+import { Button, Spin, Tag } from "antd"
 import PartyImage from "../assets/party.png"
 import { Types } from "aptos"
 import Card from "./Card"
@@ -66,7 +66,7 @@ export type RoundState = "expired" | "live" | "next" | "later"
 type Props = {
   betosResources: Types.MoveResource[]
   accountResources: Types.MoveResource[]
-  getRoundByEpoch: any
+  getRoundByEpoch: (epoch: number) => Round | undefined
   currentRound?: Round
   parsedRounds: Round[]
   totalRounds: Round[]

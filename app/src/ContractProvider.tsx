@@ -100,18 +100,18 @@ const ContractProvider: React.FC<PropsWithChildren> = ({ children }) => {
       resultStatus: "none",
     }
 
-    const theNextRound: Round = {
-      bearAmount: 0,
-      bullAmount: 0,
-      totalAmount: 0,
-      closePrice: 0,
-      closeTimestamp: (currentRound?.closeTimestamp || 0) + ROUND_STEP * 2,
-      lockTimestamp: (currentRound?.lockTimestamp || 0) + ROUND_STEP * 2,
-      startTimestamp: (currentRound?.startTimestamp || 0) + ROUND_STEP * 2,
-      lockPrice: 0,
-      epoch: 10000,
-      resultStatus: "none",
-    }
+    // const theNextRound: Round = {
+    //   bearAmount: 0,
+    //   bullAmount: 0,
+    //   totalAmount: 0,
+    //   closePrice: 0,
+    //   closeTimestamp: (currentRound?.closeTimestamp || 0) + ROUND_STEP * 2,
+    //   lockTimestamp: (currentRound?.lockTimestamp || 0) + ROUND_STEP * 2,
+    //   startTimestamp: (currentRound?.startTimestamp || 0) + ROUND_STEP * 2,
+    //   lockPrice: 0,
+    //   epoch: 10000,
+    //   resultStatus: "none",
+    // }
     return [{ ...nextRound }]
   })()
 
@@ -139,8 +139,11 @@ const ContractProvider: React.FC<PropsWithChildren> = ({ children }) => {
 
   const fetchBetStatus = async (
     handleOfBetContainer: string,
-    tableItemRequest: any,
-  ) => await client.getTableItem(handleOfBetContainer, tableItemRequest)
+    tableItemRequest: Types.TableItemRequest | null,
+  ) => {
+    if (!tableItemRequest) return null
+    return await client.getTableItem(handleOfBetContainer, tableItemRequest)
+  }
 
   // current round의 bet status 를 fetch
   const fetchBetStatusOfCurrentUser = async () => {
