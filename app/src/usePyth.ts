@@ -9,7 +9,6 @@ import useAptosModule from "./useAptosModule"
 
 const usePyth = () => {
   const { network } = useAptosModule()
-  console.log("network", network)
   const address = priceServiceAddress[network]
   const testnetConnection = new AptosPriceServiceConnection(address)
 
