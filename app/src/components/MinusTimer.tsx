@@ -55,13 +55,15 @@ export default MinusTimer
 
 const getTimeDetail = (miliseconds: number) => {
   if (miliseconds < 0) {
-    return "finished"
+    return null
   }
-  const minutes = Math.floor(miliseconds / 60000)
+  const hours = Math.floor(miliseconds / (60000 * 60))
+  const minutes = ((miliseconds % (60000 * 60)) / (1000 * 60)).toFixed(0)
   const seconds = ((miliseconds % 60000) / 1000).toFixed(0)
 
-  const minutesDetail = minutes < 10 ? `0${minutes}` : minutes
+  const hoursDetail = hours < 10 ? `0${hours}` : hours
+  const minutesDetail = Number(minutes) < 10 ? `0${minutes}` : minutes
   const secondsDetail = Number(seconds) < 10 ? `0${seconds}` : seconds
 
-  return `~ ${minutesDetail}:${secondsDetail}`
+  return `~ ${hoursDetail}:${minutesDetail}:${secondsDetail}`
 }
