@@ -1,6 +1,6 @@
 import React, { useState } from "react"
 import styled from "styled-components"
-import { Button, Tag } from "antd"
+import { Alert, Button, Space, Spin, Tag } from "antd"
 import PartyImage from "../assets/party.png"
 import { Types } from "aptos"
 import Card from "./Card"
@@ -141,6 +141,7 @@ const Home: React.FC<Props> = ({
   }
 
   const currentTimestamp = Math.floor(Date.now())
+
   return (
     <Wrapper>
       <div
@@ -169,58 +170,74 @@ const Home: React.FC<Props> = ({
         </ClaimButton>
       </Descriptions>
 
-      <MyBets
-        myEpochs={myEpochs}
-        currentEpoch={currentEpoch}
-        getRoundByEpoch={getRoundByEpoch}
-      />
+      {totalRounds.length === 0 ? (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            marginTop: "300px",
+          }}>
+          <Spin size="large" tip="Loading..."></Spin>
+        </div>
+      ) : (
+        <>
+          <MyBets
+            myEpochs={myEpochs}
+            currentEpoch={currentEpoch}
+            getRoundByEpoch={getRoundByEpoch}
+          />
 
-      <Board>
-        {totalRounds.map((round: Round, index) => {
-          const { epoch } = round
-          const diff = Number(currentEpoch) - epoch
+          <Board>
+            {totalRounds.map((round: Round, index) => {
+              const { epoch } = round
+              const diff = Number(currentEpoch) - epoch
 
-          const roundState: RoundState = (function () {
-            if (diff > 1) return "expired"
-            if (diff === 1) return "live"
-            if (diff === 0) return "next"
-            return "later"
-          })()
-          if (roundState === "live") {
-            return (
-              <Card
-                key={index}
-                round={round}
-                roundState={roundState}
-                betStatusOnCurrentRound={betStatusOnCurrentRound}
-                currentAptosPrice={currentAptosPrice}
-              />
-            )
-          } else if (roundState === "next") {
-            return (
-              <NextCardWrapper key={index}>
-                <div className="timer-wrapper">
-                  <MinusTimer start={round.lockTimestamp - currentTimestamp} />
-                </div>
+              const roundState: RoundState = (function () {
+                if (diff > 1) return "expired"
+                if (diff === 1) return "live"
+                if (diff === 0) return "next"
+                return "later"
+              })()
+              if (roundState === "live") {
+                return (
+                  <Card
+                    key={index}
+                    round={round}
+                    roundState={roundState}
+                    betStatusOnCurrentRound={betStatusOnCurrentRound}
+                    currentAptosPrice={currentAptosPrice}
+                  />
+                )
+              } else if (roundState === "next") {
+                return (
+                  <NextCardWrapper key={index}>
+                    <div className="timer-wrapper">
+                      <MinusTimer
+                        start={round.lockTimestamp - currentTimestamp}
+                      />
+                    </div>
+                    <Card
+                      round={round}
+                      roundState={roundState}
+                      betStatusOnCurrentRound={betStatusOnCurrentRound}
+                    />
+                  </NextCardWrapper>
+                )
+              }
+
+              return (
                 <Card
+                  key={index}
                   round={round}
                   roundState={roundState}
                   betStatusOnCurrentRound={betStatusOnCurrentRound}
                 />
-              </NextCardWrapper>
-            )
-          }
-
-          return (
-            <Card
-              key={index}
-              round={round}
-              roundState={roundState}
-              betStatusOnCurrentRound={betStatusOnCurrentRound}
-            />
-          )
-        })}
-      </Board>
+              )
+            })}
+          </Board>
+        </>
+      )}
     </Wrapper>
   )
 }

@@ -115,7 +115,7 @@ const ContractProvider: React.FC<PropsWithChildren> = ({ children }) => {
     return [{ ...nextRound }]
   })()
 
-  const totalRounds = [...sliced, ...laterRounds]
+  const totalRounds = sliced?.length > 0 ? [...sliced, ...laterRounds] : []
 
   const betResource = accountResources.find(
     (r) => r?.type === RESOURCE_KEY_BET,
