@@ -59,10 +59,10 @@ async function run(betosAddress: string, network: string) {
   // chain. `getPriceUpdateData` creates the update data which can be submitted to your contract. Then your contract should
   // call the Pyth Contract with this data.
   const priceFeeds = await connection.getLatestPriceFeeds(priceIds)
-  console.log(priceFeeds)
+  // console.log(priceFeeds)
 
   const latestVaas = await connection.getLatestVaas(priceIds)
-  console.log(latestVaas)
+  // console.log(latestVaas)
 
   /*
   const x = latestVaas.map((vaa) =>
@@ -72,7 +72,7 @@ async function run(betosAddress: string, network: string) {
   */
 
   const priceUpdateData = await connection.getPriceFeedsUpdateData(priceIds)
-  console.log(priceUpdateData.toString)
+  // console.log(priceUpdateData.toString)
 
   // Create a transaction and submit to your contract using the price update data
   const client = new AptosClient(endpoint)
@@ -90,11 +90,13 @@ async function run(betosAddress: string, network: string) {
     [AptosPriceServiceConnection.serializeUpdateData(priceUpdateData)],
   )
 
+  /*
   console.log(
     Buffer.from(
       AptosPriceServiceConnection.serializeUpdateData(priceUpdateData),
     ).toString("hex"),
   )
+  */
 
   await client.generateSignSubmitWaitForTransaction(
     sender,
