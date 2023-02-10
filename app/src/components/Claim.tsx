@@ -120,7 +120,7 @@ const columnData: ColumnsType<BetRecord> = [
     },
   },
   {
-    title: "betOn",
+    title: "BetOn",
     key: "isBull",
     dataIndex: "betOn",
     render: (_, record) => {

@@ -151,8 +151,19 @@ const Home: React.FC<Props> = ({
           alignItems: "center",
           paddingRight: "20px",
         }}>
-        <Button onClick={() => setShowDevInfo((s) => !s)}>Show dev info</Button>
-        <Tag color={network === "Mainnet" ? "volcano" : "green"}>{network}</Tag>
+        {localStorage.getItem("@showDevInfo") === "true" && (
+          <Button onClick={() => setShowDevInfo((s) => !s)}>
+            Show dev info
+          </Button>
+        )}
+        <Tag
+          style={{
+            marginLeft: "30px",
+            marginTop: "15px",
+          }}
+          color={network === "Mainnet" ? "volcano" : "green"}>
+          {network}
+        </Tag>
       </div>
       {showDevInfo && (
         <div>
