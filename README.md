@@ -2,19 +2,24 @@
 
 Aptos price betting platform, built in Aptos Seoul Hackathon 2023.
 
-- Website: https://betos.vercel.app/ (Only for Testnet, and Petra wallet now)
+- Website: https://betos.vercel.app/ (Only supports Petra wallet for now)
 - Pitch deck: https://drive.google.com/file/d/1QrnIiITBZNtSZGgFaoIxQsrOlPknt6A2
 - Demo: https://youtu.be/1lbOFhgoUiw
 - Team: Hyunmin Lee, Kyungwan Chae, Heesoo Han
 
-![website-preview](https://user-images.githubusercontent.com/18223805/216614301-c3013802-6351-46fb-b69c-857590a8ebe2.png)
+![website-preview](https://user-images.githubusercontent.com/18223805/218099010-706cff63-b563-46ae-801f-2ad5e8892ba3.png)
+
+## Deployments
+
+- Mainnet: [0x96be8b77f364acc83b5cf7097116c4c34a404f8e357941dff04b1d0baebcf29d](https://explorer.aptoslabs.com/account/0x96be8b77f364acc83b5cf7097116c4c34a404f8e357941dff04b1d0baebcf29d?network=mainnet)
+- Testnet: [0x71e2a99f3e9d32ef9cddac76d88f0cf8ade564bf1f24e016da160bd75d70eedb](https://explorer.aptoslabs.com/account/0x71e2a99f3e9d32ef9cddac76d88f0cf8ade564bf1f24e016da160bd75d70eedb?network=testnet)
 
 ## Code structure
 
 This is basically Move project with several subdirs.
 
 - `app`: React frontend
-- `cron`: Serverless framework to call `execute_round` every 5 minute.
+- `cron`: Serverless framework to call `execute_round` every 6 hour.
 - `scripts`: Admin scripts.
 
 ## Getting started
@@ -29,6 +34,12 @@ $ aptos move create-resource-account-and-publish-package --seed 3234 --address-n
 Do you want to publish this package under the resource account's address xxxx?
 ```
 
+## Test
+
+```sh
+aptos move test --ignore-compile-warnings
+```
+
 ## Run admin functions
 
 Put the resource account address in xxxx.
@@ -37,9 +48,9 @@ Put the resource account address in xxxx.
 export BETOS_ADDRESS=xxxx  # Require 0x prefix
 export APTOS_KEY=1acfea... # No 0x prefix
 cd scripts
-yarn run ts-node execute.ts --action start
-yarn run ts-node execute.ts --action lock
-yarn run ts-node execute.ts --action execute
+yarn run ts-node execute.ts
+yarn run ts-node execute.ts
+yarn run ts-node execute.ts
 # Now there are 3 rounds: 1 closed, 1 locked, 1 started
-# Repeat yarn run ts-node execute.ts --action execute
+# Repeat `yarn run ts-node execute.ts` to progress
 ```
