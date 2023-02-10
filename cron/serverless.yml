@@ -11,10 +11,18 @@ provider:
   region: ap-northeast-2
   environment:
     APTOS_KEY: ${ssm:/betos/test/aptos_key}
-    BETOS_ADDRESS: "0x57c21eeb2fd33f64acf8fb54e53783c04579cac5048adec5de00ea95119ebcd7"
 
 functions:
-  rateHandler:
+  rateHandlerMain:
     handler: handler.run
     events:
-      - schedule: cron(0/5 * * * ? *)
+      - schedule: cron(0 * * * ? *) # every 0 minute i.e. every hour
+    environment:
+      BETOS_ADDRESS: "0xb7819e2435c024bd2a84f7527e6b752882a38a0f8835542fa893ac5f511d58a4"
+  rateHandlerTest:
+    handler: handler.run
+    events:
+      - schedule: cron(0/10 * * * ? *) # every 10 minute
+    environment:
+      BETOS_ADDRESS: "0x2767545a8d72f4856540d91c6e5b97acbd37380e5d65fb3a11c18c218bbfde12"
+      NETWORK: "testnet"
