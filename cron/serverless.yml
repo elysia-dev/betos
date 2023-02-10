@@ -19,6 +19,7 @@ functions:
       - schedule: cron(0 * * * ? *) # every 0 minute i.e. every hour
     environment:
       BETOS_ADDRESS: "0xb7819e2435c024bd2a84f7527e6b752882a38a0f8835542fa893ac5f511d58a4"
+      NETWORK: "mainnet"
   rateHandlerTest:
     handler: handler.run
     events:
