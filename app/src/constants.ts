@@ -6,8 +6,9 @@ export const PRIMARY_TEXT_COLOR = "#61c19b"
 const FIVE_MINUTES = 5 * 60 * 1000
 const TEN_MINUTES = 10 * 60 * 1000
 const ONE_HOUR = 60 * 60 * 1000
+const SIX_HOUR = 6 * 60 * 60 * 1000
 
-export const ROUND_STEP = FIVE_MINUTES
+export const ROUND_STEP = SIX_HOUR
 
 export const priceId = {
   Mainnet: "0x03ae4db29ed4ae33d323568895aa00337e658e348b37509f5372ae51f0af00d5", // Mainnet
