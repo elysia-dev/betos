@@ -29,6 +29,7 @@ import {
 import MinusTimer from "./MinusTimer"
 import PlusTimer from "./PlusTimer"
 import ContractContext from "../ContractContext"
+import { useNavigate } from "react-router-dom"
 
 const { Text } = Typography
 
@@ -350,6 +351,11 @@ const Card: React.FC<CardProps> = ({
   const { network } = useAptosModule()
 
   const { fetchBetStatusOfCurrentUser } = useContext(ContractContext)
+  const navigate = useNavigate()
+
+  const refreshPage = () => {
+    navigate(0)
+  }
 
   useEffect(() => {
     setBetAmount(DEFUALT_BET_AMOUNT)
@@ -442,11 +448,11 @@ const Card: React.FC<CardProps> = ({
       arguments: [String(epoch), String(aptAmount), String(isBull)],
       type_arguments: [],
     }
-    console.log("transaction", transaction)
 
     try {
       await window.aptos.signAndSubmitTransaction(transaction)
       await fetchBetStatusOfCurrentUser()
+      refreshPage()
     } catch (e: any) {
       console.log("!!!!!!!!!!!!!!!!erorr in bet!!!!!!!!!!!!!!!!!!")
       console.log("e", e)
@@ -484,71 +490,11 @@ const Card: React.FC<CardProps> = ({
     return ArrowDownBlack
   })()
 
-  const renderBetButtons = () => {
-    if (betMode === null) {
-      return (
-        <div>
-          <div>
-            <span className="title">Prize Pool: </span>
-            <span className="content">{totalAmount}APT</span>
-          </div>
-          <div className="enter-buttons">
-            <Button
-              className="up"
-              onClick={() => {
-                setBetMode("up")
-              }}>
-              Enter Up
-            </Button>
-            <Button
-              className="down"
-              onClick={() => {
-                setBetMode("down")
-              }}>
-              Enter Down
-            </Button>
-          </div>
-        </div>
-      )
-    }
-
-    return (
-      <div>
-        <div className="bet_input">
-          <h4>Bet to {betMode}</h4>
-          <InputNumber
-            size={"large"}
-            onChange={(value) => {
-              value && setBetAmount(value)
-            }}
-            step={0.01}
-            value={betAmount}
-            min={0.001}
-            max={100}
-            addonBefore="+"
-            addonAfter="APT"
-            defaultValue={DEFUALT_BET_AMOUNT}
-          />
-        </div>
-        <Button
-          onClick={() => {
-            handleClickBet()
-          }}>
-          Confirm
-        </Button>
-        <Button
-          onClick={() => {
-            setBetMode(null)
-          }}>
-          Cancel
-        </Button>
-      </div>
-    )
-  }
+  const isShowBetInput = betMode !== null
 
   return (
     <CardWrapper isNext={isNext} isDisabled={isDisabled}>
-      {betMode !== null ? (
+      {isShowBetInput && (
         <>
           <Header>
             <div>
@@ -605,7 +551,8 @@ const Card: React.FC<CardProps> = ({
             </div>
           </Contents>
         </>
-      ) : (
+      )}
+      {!isShowBetInput && (
         <>
           <Header>
             <div>
@@ -677,7 +624,28 @@ const Card: React.FC<CardProps> = ({
                       </div>
                     </div>
                   ) : (
-                    renderBetButtons()
+                    <div>
+                      <div>
+                        <span className="title">Prize Pool: </span>
+                        <span className="content">{totalAmount}APT</span>
+                      </div>
+                      <div className="enter-buttons">
+                        <Button
+                          className="up"
+                          onClick={() => {
+                            setBetMode("up")
+                          }}>
+                          Enter Up
+                        </Button>
+                        <Button
+                          className="down"
+                          onClick={() => {
+                            setBetMode("down")
+                          }}>
+                          Enter Down
+                        </Button>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
