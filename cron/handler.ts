@@ -18,6 +18,8 @@ async function execute_round(betosAddress: string, network: string) {
     throw new Error(`APTOS_KEY environment variable should be set.`);
   }
 
+  const INTERVAL = 6 * 60 * 60; // 6 hours
+
   const endpoint =
     network == "mainnet"
       ? "https://fullnode.mainnet.aptoslabs.com"
@@ -69,7 +71,7 @@ async function execute_round(betosAddress: string, network: string) {
     `${betosAddress}::prediction`,
     "execute_round",
     [],
-    [AptosPriceServiceConnection.serializeUpdateData(priceUpdateData)]
+    [AptosPriceServiceConnection.serializeUpdateData(priceUpdateData), INTERVAL]
   );
 
   /*
@@ -80,8 +82,10 @@ async function execute_round(betosAddress: string, network: string) {
   )
   */
 
-  await client.generateSignSubmitWaitForTransaction(
+  const tx = await client.generateSignSubmitWaitForTransaction(
     sender,
     new TxnBuilderTypes.TransactionPayloadEntryFunction(entryFunction)
   );
+
+  console.log(tx);
 }

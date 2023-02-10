@@ -21,8 +21,6 @@ module betos::prediction {
     #[test_only]
     use std::debug;
 
-    const INTERVAL_SECONDS: u64 = 3600; // 1 hour
-
     // For the entire list of price_ids head to https://pyth.network/developers/price-feed-ids/#pyth-cross-chain-testnet
     const APT_USD_TESTNET_PRICE_ID : vector<u8> = x"44a93dddd8effa54ea51076c4e851b6cbbfd938e82eb90197de38fe8876bb66e";
     const APT_USD_MAINNET_PRICE_ID : vector<u8> = x"03ae4db29ed4ae33d323568895aa00337e658e348b37509f5372ae51f0af00d5";
@@ -118,10 +116,10 @@ module betos::prediction {
         round_container.paused = false;
     }
 
-    public fun start_round(rounds: &mut vector<Round>, epoch: u64) {
+    public fun start_round(rounds: &mut vector<Round>, epoch: u64, interval: u64) {
         let start_timestamp = timestamp::now_seconds();
-        let lock_timestamp = start_timestamp + INTERVAL_SECONDS;
-        let close_timestamp = start_timestamp + 2 * INTERVAL_SECONDS;
+        let lock_timestamp = start_timestamp + interval;
+        let close_timestamp = start_timestamp + 2 * interval;
 
         let new_round = Round {
             epoch: epoch,
@@ -138,11 +136,11 @@ module betos::prediction {
         vector::push_back(rounds, new_round);
     }
 
-    public fun safe_start_round(rounds: &mut vector<Round>, epoch: u64) {
+    public fun safe_start_round(rounds: &mut vector<Round>, epoch: u64, interval: u64) {
         // TODO: check called onlyOnce
         // TODO: check epoch n - 2 has ended
         // TODO: check now >= epoch n - 2 . close_timestamp
-        start_round(rounds, epoch);
+        start_round(rounds, epoch, interval);
     }
 
     public fun safe_lock_round(round: &mut Round, price: u64) {
@@ -154,7 +152,8 @@ module betos::prediction {
     }
 
     // onlyOwner
-    public entry fun execute_round(account: &signer, pyth_update_data: vector<vector<u8>>) acquires RoundContainer {
+    // NOTE: Before start a round with a new interval, you should pause and close all existing rounds.
+    public entry fun execute_round(account: &signer, pyth_update_data: vector<vector<u8>>, interval: u64) acquires RoundContainer {
         let account_address = signer::address_of(account);
         assert!(account_address == @admin, ENO_OWNER);
         let round_container = borrow_global_mut<RoundContainer>(@betos);
@@ -191,17 +190,17 @@ module betos::prediction {
             };
         } else {
             if (last_paused_epoch == current_epoch) {
-                genesis_start_round(account);
+                genesis_start_round(account, interval);
             } else if (last_paused_epoch + 1 == current_epoch) {
-                genesis_lock_round(account, price_positive);
+                genesis_lock_round(account, price_positive, interval);
             } else {
-                internal_execute_round(account, price_positive);
+                internal_execute_round(account, price_positive, interval);
             };
         };
     }
 
     // onlyOwner
-    public fun internal_execute_round(account: &signer, price: u64) acquires RoundContainer {
+    public fun internal_execute_round(account: &signer, price: u64, interval: u64) acquires RoundContainer {
         let account_address = signer::address_of(account);
         assert!(account_address == @admin, ENO_OWNER);
         let round_container = borrow_global_mut<RoundContainer>(@betos);
@@ -221,14 +220,14 @@ module betos::prediction {
         safe_lock_round(current_round, price);
 
         // 4. start epoch
-        safe_start_round(&mut round_container.rounds, current_epoch + 1);
+        safe_start_round(&mut round_container.rounds, current_epoch + 1, interval);
         // 5. epoch += 1
         round_container.current_epoch = current_epoch + 1;
     }
 
     // onlyOwner
     // lock -> start
-    public fun genesis_lock_round(account: &signer, price: u64) acquires RoundContainer {
+    public fun genesis_lock_round(account: &signer, price: u64, interval: u64) acquires RoundContainer {
         let account_address = signer::address_of(account);
         assert!(account_address == @admin, ENO_OWNER);
         let round_container = borrow_global_mut<RoundContainer>(@betos);
@@ -245,14 +244,14 @@ module betos::prediction {
         safe_lock_round(current_round, price);
 
         // 4. start epoch
-        safe_start_round(&mut round_container.rounds, current_epoch + 1);
+        safe_start_round(&mut round_container.rounds, current_epoch + 1, interval);
         // 5. epoch += 1
         round_container.current_epoch = current_epoch + 1;
     }
 
     // onlyOwner
     // start
-    public fun genesis_start_round(account: &signer) acquires RoundContainer {
+    public fun genesis_start_round(account: &signer, interval: u64) acquires RoundContainer {
         let account_address = signer::address_of(account);
         assert!(account_address == @admin, ENO_OWNER);
         let round_container = borrow_global_mut<RoundContainer>(@betos);
@@ -264,7 +263,7 @@ module betos::prediction {
         let current_epoch = round_container.current_epoch;
 
         // 4. start epoch
-        safe_start_round(&mut round_container.rounds, current_epoch + 1);
+        safe_start_round(&mut round_container.rounds, current_epoch + 1, interval);
         // 5. epoch += 1
         round_container.current_epoch = current_epoch + 1;
     }
@@ -468,13 +467,14 @@ module betos::prediction {
         debug::print(&now); // 0
         let resource_addr = signer::address_of(&resource_account);
 
-        genesis_start_round(&creator);
+        let interval = 10;
+        genesis_start_round(&creator, interval);
         let epoch = 1; // epoch starts from 1, because 0 means empty.
         let (start_timestamp, lock_timestamp, close_timestamp, _, _) = get_round(epoch);
 
         assert!(start_timestamp == now, 0);
-        assert!(lock_timestamp == now + INTERVAL_SECONDS, 0);
-        assert!(close_timestamp == now + 2 * INTERVAL_SECONDS, 0);
+        assert!(lock_timestamp == now + interval, 0);
+        assert!(close_timestamp == now + 2 * interval, 0);
     }
 
 /*
