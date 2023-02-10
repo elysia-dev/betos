@@ -1,12 +1,12 @@
 import React, { useState } from "react"
 import styled from "styled-components"
-import { Button } from "antd"
+import { Button, Tag } from "antd"
 import PartyImage from "../assets/party.png"
 import { Types } from "aptos"
 import Card from "./Card"
 import { checkRoundClosed, formatNumber } from "../utils"
 import { BetStatus, Round } from "../types"
-import { BETOS_ADDRESS, MODULE_NAME, PRIMARY_TEXT_COLOR } from "../constants"
+import { betosAddress, MODULE_NAME, PRIMARY_TEXT_COLOR } from "../constants"
 import MyBets from "./MyBets"
 import useAptosModule from "../useAptosModule"
 
@@ -64,20 +64,6 @@ type Props = {
   currentAptosPrice: number
 }
 
-export const handleClickClaim = async () => {
-  const ok = window.confirm(`Claim all bets. Is it okay?`)
-  if (!ok) return
-
-  const transaction = {
-    type: "entry_function_payload",
-    function: `${BETOS_ADDRESS}::${MODULE_NAME}::claim_entry`,
-    arguments: [],
-    type_arguments: [],
-  }
-
-  await window.aptos.signAndSubmitTransaction(transaction)
-}
-
 const Home: React.FC<Props> = ({
   getRoundByEpoch,
   totalRounds,
@@ -86,7 +72,7 @@ const Home: React.FC<Props> = ({
   myEpochs,
   currentAptosPrice,
 }) => {
-  const { address } = useAptosModule()
+  const { address, network } = useAptosModule()
   const [showDevInfo, setShowDevInfo] = useState(false)
 
   const claimableAmounts = (function () {
@@ -126,13 +112,36 @@ const Home: React.FC<Props> = ({
     }, 0)
     return formatNumber(sum, 10)
   })()
+
+  const handleClickClaim = async () => {
+    const ok = window.confirm(`Claim all bets. Is it okay?`)
+    if (!ok) return
+
+    const transaction = {
+      type: "entry_function_payload",
+      function: `${betosAddress[network]}::${MODULE_NAME}::claim_entry`,
+      arguments: [],
+      type_arguments: [],
+    }
+
+    await window.aptos.signAndSubmitTransaction(transaction)
+  }
   return (
     <Wrapper>
-      <Button onClick={() => setShowDevInfo((s) => !s)}>Show dev info</Button>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          paddingRight: "20px",
+        }}>
+        <Button onClick={() => setShowDevInfo((s) => !s)}>Show dev info</Button>
+        <Tag color={network === "Mainnet" ? "volcano" : "green"}>{network}</Tag>
+      </div>
       {showDevInfo && (
         <div>
           <div>My address: {address}</div>
-          <div>Bettos address: {BETOS_ADDRESS}</div>
+          <div>Bettos address: {betosAddress[network]}</div>
           <div>currentEpoch: {currentEpoch}</div>
         </div>
       )}

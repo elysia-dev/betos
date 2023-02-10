@@ -8,7 +8,7 @@ import { formatNumber, numberToApt } from "../utils"
 import useAptosModule from "../useAptosModule"
 import { BetStatus, Round } from "../types"
 import {
-  BETOS_ADDRESS,
+  betosAddress,
   MODULE_NAME,
   PRIMARY_TEXT_COLOR,
   ROUND_STEP,
@@ -212,6 +212,7 @@ const Card: React.FC<CardProps> = ({
   const [betMode, setBetMode] = useState<"up" | "down" | null>(null)
   const [betAmount, setBetAmount] = useState(0)
   const DEFUALT_BET_AMOUNT = 0.02
+  const { network } = useAptosModule()
 
   useEffect(() => {
     setBetAmount(DEFUALT_BET_AMOUNT)
@@ -298,7 +299,7 @@ const Card: React.FC<CardProps> = ({
 
     const transaction = {
       type: "entry_function_payload",
-      function: `${BETOS_ADDRESS}::${MODULE_NAME}::bet`,
+      function: `${betosAddress[network]}::${MODULE_NAME}::bet`,
       arguments: [String(epoch), String(aptAmount), String(isBull)],
       type_arguments: [],
     }
