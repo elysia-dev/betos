@@ -42,14 +42,14 @@ const useAptosModule = () => {
     init()
   }, [])
 
-  window.aptos.onNetworkChange(
+  window.aptos?.onNetworkChange(
     (newNetwork: { networkName: "Mainnet" | "Testnet" }) => {
       setNetwork(newNetwork?.networkName)
       refreshPage()
     },
   )
 
-  window.aptos.onAccountChange(() => {
+  window.aptos?.onAccountChange(() => {
     refreshPage()
   })
 
