@@ -54,3 +54,22 @@ yarn run ts-node execute.ts
 # Now there are 3 rounds: 1 closed, 1 locked, 1 started
 # Repeat `yarn run ts-node execute.ts` to progress
 ```
+
+### pause
+
+You can pause like this.
+
+```sh
+source export-env.sh
+aptos move run --function-id $MAINNET_BETOS_ADDRESS::prediction::pause --profile main
+```
+
+**Main account info**
+
+```yaml
+main:
+  private_key: "_"
+  public_key: "_"
+  account: c655e88231fc493c0e105caa6ad27849e6b432153ee2c3456e3d88e7a706b1b7
+  rest_url: "https://fullnode.mainnet.aptoslabs.com"
+```
