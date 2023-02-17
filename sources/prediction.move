@@ -164,7 +164,12 @@ module betos::prediction {
 
                     let current_round = vector::borrow_mut<Round>(&mut round_container.rounds, current_epoch - 1);
                     safe_lock_round(current_round, price_positive);
-                };
+                } else {
+                    let current_round = vector::borrow_mut<Round>(&mut round_container.rounds, current_epoch - 1);
+                    if (current_round.close_price == 0) {
+                        safe_close_round(current_round, price_positive);
+                    }
+                }
             } else if (last_paused_epoch == current_epoch) {
                 let current_round = vector::borrow_mut<Round>(&mut round_container.rounds, current_epoch - 1);
 
@@ -456,7 +461,7 @@ module betos::prediction {
         resource_account::create_resource_account(origin_account, vector::empty<u8>(), vector::empty<u8>());
         let user_addr = signer::address_of(origin_account);
         let resource_addr = aptos_framework::account::create_resource_address(&user_addr, vector::empty<u8>());
-        debug::print(&resource_addr);
+        // debug::print(&resource_addr);
 
         init_module(resource_account);
     }
@@ -470,7 +475,7 @@ module betos::prediction {
         set_up_test(&creator, &resource_account, framework);
 
         let now = timestamp::now_seconds();
-        debug::print(&now); // 0
+        // debug::print(&now); // 0
         let resource_addr = signer::address_of(&resource_account);
         let round_container = borrow_global_mut<RoundContainer>(resource_addr);
 
@@ -492,7 +497,6 @@ module betos::prediction {
         set_up_test(&creator, &resource_account, framework);
 
         let now = timestamp::now_seconds();
-        debug::print(&now); // 0
         let resource_addr = signer::address_of(&resource_account);
         let round_container = borrow_global_mut<RoundContainer>(resource_addr);
         let price = 100;
@@ -507,7 +511,7 @@ module betos::prediction {
     }
 
     #[test(creator = @0xcafe, resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5, framework = @0x1)]
-    fun test_execute_round_with_2_rounds(
+    fun test_execute_round_when_there_are_2_rounds(
         creator: signer,
         resource_account: signer,
         framework: signer
@@ -520,8 +524,11 @@ module betos::prediction {
         let round_container = borrow_global_mut<RoundContainer>(resource_addr);
         let price = 100;
 
+        // Setup
         execute_round_internal(round_container, price, now, now + 10, now + 20);
         execute_round_internal(round_container, price + 1, now + 10, now + 20, now + 30);
+
+        // Action
         execute_round_internal(round_container, price + 2, now + 20, now + 30, now + 40);
 
         let epoch = 1; // epoch starts from 1, because 0 means empty.
@@ -540,7 +547,7 @@ module betos::prediction {
     }
 
     #[test(creator = @0xcafe, resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5, framework = @0x1)]
-    fun test_execute_round_when_paused_with_upcoming_2_rounds(
+    fun test_execute_round_when_paused_with_2_upcoming_rounds(
         creator: signer,
         resource_account: signer,
         framework: signer
@@ -567,7 +574,6 @@ module betos::prediction {
         execute_round_internal(round_container, price + 3, now + 30, now + 40, now + 50);
         execute_round_internal(round_container, price + 4, now + 40, now + 50, now + 60);
 
-        let epoch = 1; // epoch starts from 1, because 0 means empty.
         let round2 = vector::borrow<Round>(&round_container.rounds, 1);
         let round3 = vector::borrow<Round>(&round_container.rounds, 2);
 
@@ -578,5 +584,80 @@ module betos::prediction {
         assert!(round2.close_price == price + 3, 0);
         assert!(round3.lock_price == price + 3, 0);
         assert!(round3.close_price == price + 4, 0);
+    }
+
+    #[test(creator = @0xcafe, resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5, framework = @0x1)]
+    fun test_execute_round_when_paused_with_only_1_round(
+        creator: signer,
+        resource_account: signer,
+        framework: signer
+    ) acquires RoundContainer {
+        set_up_test(&creator, &resource_account, framework);
+
+        let now = timestamp::now_seconds();
+        // debug::print(&now); // 0
+        let resource_addr = signer::address_of(&resource_account);
+        let round_container = borrow_global_mut<RoundContainer>(resource_addr);
+        let price = 100;
+
+        execute_round_internal(round_container, price, now, now + 10, now + 20);
+
+        round_container.paused = true;
+        round_container.last_paused_epoch = round_container.current_epoch;
+
+        execute_round_internal(round_container, price + 1, now + 10, now + 20, now + 30);
+        execute_round_internal(round_container, price + 2, now + 20, now + 30, now + 40);
+
+        let round1 = vector::borrow<Round>(&round_container.rounds, 0);
+
+        // Test
+        let total_rounds = vector::length<Round>(&round_container.rounds);
+        assert!(total_rounds == 1, 0);
+
+        assert!(round1.lock_price == price + 1, 0);
+        assert!(round1.close_price == price + 2, 0);
+    }
+
+    #[test(creator = @0xcafe, resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5, framework = @0x1)]
+    fun test_execute_round_after_unpause(
+        creator: signer,
+        resource_account: signer,
+        framework: signer
+    ) acquires RoundContainer {
+        set_up_test(&creator, &resource_account, framework);
+
+        let now = timestamp::now_seconds();
+        // debug::print(&now); // 0
+        let resource_addr = signer::address_of(&resource_account);
+        let round_container = borrow_global_mut<RoundContainer>(resource_addr);
+        let price = 100;
+
+        execute_round_internal(round_container, price, now, now + 10, now + 20);
+
+        // pause
+        round_container.paused = true;
+        round_container.last_paused_epoch = round_container.current_epoch;
+
+        // lock and close the round
+        execute_round_internal(round_container, price + 1, now + 10, now + 20, now + 30);
+        execute_round_internal(round_container, price + 2, now + 20, now + 30, now + 40);
+
+        // unpause
+        round_container.paused = false;
+        round_container.last_paused_epoch = round_container.current_epoch;
+
+        execute_round_internal(round_container, price + 3, now + 30, now + 40, now + 50);
+        execute_round_internal(round_container, price + 4, now + 40, now + 50, now + 60);
+        execute_round_internal(round_container, price + 5, now + 50, now + 60, now + 70);
+
+        let round2 = vector::borrow<Round>(&round_container.rounds, 1);
+        let round3 = vector::borrow<Round>(&round_container.rounds, 2);
+
+        // Test
+        let total_rounds = vector::length<Round>(&round_container.rounds);
+        assert!(total_rounds == 4, 0);
+        assert!(round2.lock_price == price + 4, 0);
+        assert!(round2.close_price == price + 5, 0);
+        assert!(round3.lock_price == price + 5, 0);
     }
 }
