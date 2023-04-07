@@ -1,6 +1,6 @@
 # Betos
 
-Aptos price betting platform, built in Aptos Seoul Hackathon 2023.
+Aptos price betting platform.
 
 - Website: https://betos.vercel.app/ (Only supports Petra wallet for now)
 - Pitch deck: https://drive.google.com/file/d/1P8Xs1IKEz1jqnpsTDuC-tpPXE8u5lLn2
@@ -34,6 +34,16 @@ $ aptos move create-resource-account-and-publish-package --seed 3234 --address-n
 Do you want to publish this package under the resource account's address xxxx?
 ```
 
+### Set env vars
+
+Create `export-env.sh` as below.
+
+```sh
+export APTOS_KEY=0x...
+export TESTNET_BETOS_ADDRESS=0x...
+export MAINNET_BETOS_ADDRESS=0x...
+```
+
 ## Test
 
 ```sh
@@ -45,8 +55,7 @@ aptos move test --ignore-compile-warnings
 Put the resource account address in xxxx.
 
 ```sh
-export BETOS_ADDRESS=xxxx  # Require 0x prefix
-export APTOS_KEY=1acfea... # No 0x prefix
+source export-env.sh
 cd scripts
 yarn run ts-node execute.ts
 yarn run ts-node execute.ts

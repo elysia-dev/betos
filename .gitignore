@@ -3,3 +3,5 @@ build/
 node_modules/
 .vercel
 .serverless
+
+export-env.sh
