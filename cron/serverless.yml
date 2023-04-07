@@ -17,14 +17,14 @@ functions:
   rateHandlerMain:
     handler: handler.run
     events:
-      # - schedule: cron(0 0,6,12,18 * * ? *) # every 6 hour
+      - schedule: cron(0 0,6,12,18 * * ? *) # every 6 hour
     environment:
       BETOS_ADDRESS: "0x96be8b77f364acc83b5cf7097116c4c34a404f8e357941dff04b1d0baebcf29d"
       NETWORK: "mainnet"
   rateHandlerTest:
     handler: handler.run
     events:
-      # - schedule: cron(0/10 * * * ? *) # every 10 minute
+      - schedule: cron(0/10 * * * ? *) # every 10 minute
     environment:
       BETOS_ADDRESS: "0x71e2a99f3e9d32ef9cddac76d88f0cf8ade564bf1f24e016da160bd75d70eedb"
       NETWORK: "testnet"

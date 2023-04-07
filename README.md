@@ -3,7 +3,7 @@
 Aptos price betting platform, built in Aptos Seoul Hackathon 2023.
 
 - Website: https://betos.vercel.app/ (Only supports Petra wallet for now)
-- Pitch deck: https://drive.google.com/file/d/1QrnIiITBZNtSZGgFaoIxQsrOlPknt6A2
+- Pitch deck: https://drive.google.com/file/d/1P8Xs1IKEz1jqnpsTDuC-tpPXE8u5lLn2
 - Demo: https://youtu.be/1lbOFhgoUiw
 - Team: Hyunmin Lee, Kyungwan Chae, Heesoo Han
 

@@ -85,11 +85,21 @@ async function main() {
     // address: "",
   });
 
+  const now = Math.floor(Date.now() / 1000);
+  const SIX_HOURS = 6 * 60 * 60;
+  const TEN_MINUTES = 10 * 60;
+  const INTERVAL = network == "mainnet" ? SIX_HOURS : TEN_MINUTES;
+
   const entryFunction = TxnBuilderTypes.EntryFunction.natural(
     `${betosAddress}::prediction`,
     "execute_round",
     [],
-    [AptosPriceServiceConnection.serializeUpdateData(priceUpdateData)]
+    [
+      AptosPriceServiceConnection.serializeUpdateData(priceUpdateData),
+      BCS.bcsSerializeUint64(now),
+      BCS.bcsSerializeUint64(now + INTERVAL),
+      BCS.bcsSerializeUint64(now + 2 * INTERVAL),
+    ]
   );
 
   console.log(
